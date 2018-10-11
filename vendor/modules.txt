@@ -1,3 +1,5 @@
+# github.com/Waitfantasy/unicorn-service v1.0.1
+github.com/Waitfantasy/unicorn-service/machine
 # github.com/coreos/etcd v3.3.10+incompatible
 github.com/coreos/etcd/auth/authpb
 github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes

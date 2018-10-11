@@ -14,7 +14,14 @@ const (
 )
 
 type Meta struct {
-	config *IdConfig
+	version     int
+	epoch       uint64
+	idType      int
+	releaseType int
+	machineId   int
+	sequence    uint64
+	timestamp   uint64
+	config      *IdConfig
 }
 
 func NewMeta(c *IdConfig) *Meta {

@@ -19,13 +19,6 @@ package id
 ////	versionBits        = 1
 ////)
 //
-type IdConfig struct {
-	Epoch       uint64
-	Version     int
-	IdGenType   int
-	ReleaseType int
-	MachineId   int
-}
 
 type IdData struct {
 	seq           uint64
