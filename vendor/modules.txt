@@ -14,7 +14,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# go.etcd.io/etcd v3.3.9+incompatible
+# go.etcd.io/etcd v3.3.10+incompatible
 go.etcd.io/etcd/clientv3
 # golang.org/x/net v0.0.0-20181005035420-146acd28ed58
 golang.org/x/net/context

@@ -1,5 +1,6 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.28.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
+github.com/Waitfantasy/unicorn-service v1.0.1/go.mod h1:Hdyyu962oiDdV+ybC5QugP+J25/O+Pplcf0OnhzCahg=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/etcd v3.3.9+incompatible h1:/pWnp1yEff0z+vBEOBFLZZ22Ux5xoVozEe7X0VFyRNo=
 github.com/coreos/etcd v3.3.9+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
