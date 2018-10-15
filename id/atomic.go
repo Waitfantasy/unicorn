@@ -2,55 +2,68 @@ package id
 
 import (
 	"errors"
-	"github.com/Waitfantasy/unicorn/time"
 	"sync/atomic"
 	"unsafe"
 )
 
-type CASId struct {
-	meta     *Meta
-	data     *IdData
-	dataAddr *unsafe.Pointer
+type AtomicGenerator struct {
+	meta *Meta
+	data *Data
+	addr *unsafe.Pointer
 }
 
-func NewAtomicId(c *IdConfig) *CASId {
-	casId := new(CASId)
-	casId.meta = NewMeta(c)
-	casId.data = &IdData{0, 0}
-	casId.dataAddr = (*unsafe.Pointer)(unsafe.Pointer(casId.data))
-	atomic.StorePointer(casId.dataAddr, unsafe.Pointer(casId.data))
-	return casId
+func NewAtomicGenerator(meta *Meta) *AtomicGenerator {
+	gen := &AtomicGenerator{
+		meta: meta,
+		data: &Data{
+			0, 0,
+		},
+	}
+	gen.addr = (*unsafe.Pointer)(unsafe.Pointer(gen.data))
+	atomic.StorePointer(gen.addr, unsafe.Pointer(gen.data))
+	return gen
 }
 
-func (cas *CASId) Gen() (uint64, error) {
-	var sequence, ts uint64
+func (gen *AtomicGenerator) Make() (uint64, error) {
+	var sequence, timestamp uint64
 	for ; ; {
-		oldDataPointer := atomic.LoadPointer(cas.dataAddr)
-		oldData := (*IdData)(oldDataPointer)
-		ts = time.Timestamp(cas.meta.config.IdGenType, cas.meta.config.Epoch)
-		sequence = oldData.seq
-		if ts < oldData.lastTimestamp {
+		oldPointer := atomic.LoadPointer(gen.addr)
+		oldData := (*Data)(oldPointer)
+		timestamp = Timestamp(gen.meta.data.idType, gen.meta.data.epoch)
+		sequence = oldData.sequence
+		if timestamp < oldData.lastTimestamp {
 			return 0, errors.New("clock error.")
 		}
-
-		if ts == oldData.lastTimestamp {
+		if timestamp == oldData.lastTimestamp {
 			sequence++
-			sequence &= cas.meta.GetMaxSequence()
+			sequence &= uint64(gen.meta.GetMaxSequence())
 			if sequence == 0 {
-				ts = time.WaitNextClock(cas.meta.config.IdGenType, cas.meta.config.Epoch, oldData.lastTimestamp)
+				timestamp = WaitNextClock(gen.meta.data.idType, gen.meta.data.epoch, oldData.lastTimestamp)
 			}
 		} else {
 			sequence = 0
 		}
-
-		newData := IdData{
-			seq:           sequence,
-			lastTimestamp: ts,
+		newData := &Data{
+			sequence:      sequence,
+			lastTimestamp: timestamp,
 		}
-
-		if atomic.CompareAndSwapPointer(cas.dataAddr, oldDataPointer, unsafe.Pointer(&newData)) {
-			uuid := Calculate(sequence, ts, cas.meta)
+		if atomic.CompareAndSwapPointer(gen.addr, oldPointer, unsafe.Pointer(newData)) {
+			uuid := Calculate(sequence, timestamp, gen.meta)
 			return uuid, nil
 		}
 	}
+}
+
+func (gen *AtomicGenerator) Extract(uuid uint64) (*MetaData) {
+	data := &MetaData{}
+	data.machineId = int(uuid & uint64(gen.meta.GetMaxMachine()))
+	data.seq = int((uuid >> gen.meta.GetSequenceLeftShift()) &  uint64(gen.meta.GetMaxSequence()))
+	t := uuid >> gen.meta.GetTimestampLeftShift() & uint64(gen.meta.GetMaxTimestamp())
+	println(t)
+	t = t + gen.meta.data.epoch
+	data.timestamp = int(t)
+	data.service = int((uuid >> gen.meta.GetServiceLeftShift()) & uint64(gen.meta.GetMaxService()))
+	data.idType = int((uuid >> gen.meta.GetIdTypeLeftShift()) & uint64(gen.meta.GetMaxIdType()))
+	data.version = int((uuid >> gen.meta.GetVersionLeftShift()) & uint64(gen.meta.GetMaxVersion()))
+	return data
 }
