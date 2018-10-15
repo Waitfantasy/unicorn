@@ -1,15 +1,9 @@
 {
-  /*
-  * release type:
-  * 1: local
-  * 2: http
-  * 3: grpc
-  */
+
   "release_type": 1,
   "machine_id_type": "local",
   "machine_id": 1,
   "machine_ip": "192.169.0.104",
   "machine_validator_cluster": [
-
   ]
 }

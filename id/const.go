@@ -1,4 +1,4 @@
-package conf
+package id
 
 const (
 	IdPeakGenType        = 0
