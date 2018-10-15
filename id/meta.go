@@ -11,7 +11,6 @@ const (
 	VersionBits         = 1
 )
 
-<<<<<<< HEAD
 type MetaData struct {
 	epoch     uint64
 	seq       int
@@ -20,17 +19,6 @@ type MetaData struct {
 	version   int
 	service   int
 	idType    int
-=======
-type Meta struct {
-	version     int
-	epoch       uint64
-	idType      int
-	releaseType int
-	machineId   int
-	sequence    uint64
-	timestamp   uint64
-	config      *IdConfig
->>>>>>> 1be3d383e04f994d82f2912dda4f0a0c3322ce8e
 }
 
 type Meta struct {

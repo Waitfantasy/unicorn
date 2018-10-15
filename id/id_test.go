@@ -1,7 +1,6 @@
 package id
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -11,7 +10,7 @@ func TestId_Gen(t *testing.T) {
 	wg := sync.WaitGroup{}
 	factory := GeneratorFactory{}
 	gen := factory.CreateGenerator(AtomicGeneratorType, NewMeta(&MetaData{
-		epoch:     1538473327172,
+		epoch:     1514736000000,
 		idType:    SecondIdType,
 		service:   1,
 		version:   1,
@@ -19,7 +18,7 @@ func TestId_Gen(t *testing.T) {
 	}))
 
 	m := sync.Map{}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go func() {
 			uuid, err := gen.Make()
@@ -31,7 +30,7 @@ func TestId_Gen(t *testing.T) {
 			} else {
 				m.Store(uuid, uuid)
 				data := gen.Extract(uuid)
-				fmt.Printf("machine: %d, seq: %d, timestamp: %s, service: %d, id type: %d, version: %d\n",
+				t.Errorf("machine: %d, seq: %d, timestamp: %s, service: %d, id type: %d, version: %d\n",
 					data.machineId, data.seq, time.Unix(int64(data.timestamp), 0).Format("2006-01-02 15:04:05"), data.service, data.idType, data.version)
 			}
 			wg.Done()

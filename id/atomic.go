@@ -59,9 +59,9 @@ func (gen *AtomicGenerator) Extract(uuid uint64) (*MetaData) {
 	data.machineId = int(uuid & uint64(gen.meta.GetMaxMachine()))
 	data.seq = int((uuid >> gen.meta.GetSequenceLeftShift()) &  uint64(gen.meta.GetMaxSequence()))
 	t := uuid >> gen.meta.GetTimestampLeftShift() & uint64(gen.meta.GetMaxTimestamp())
-	println(t)
-	t = t + gen.meta.data.epoch
+	t = (t * 1000  + gen.meta.data.epoch) / 1000
 	data.timestamp = int(t)
+	println(t)
 	data.service = int((uuid >> gen.meta.GetServiceLeftShift()) & uint64(gen.meta.GetMaxService()))
 	data.idType = int((uuid >> gen.meta.GetIdTypeLeftShift()) & uint64(gen.meta.GetMaxIdType()))
 	data.version = int((uuid >> gen.meta.GetVersionLeftShift()) & uint64(gen.meta.GetMaxVersion()))

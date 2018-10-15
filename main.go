@@ -2,6 +2,7 @@ package unicorn
 
 import (
 	"flag"
+	"fmt"
 	"github.com/Waitfantasy/unicorn/conf"
 	"log"
 )
@@ -21,4 +22,5 @@ func main()  {
 	if cfg, err = conf.InitConfig(filename); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(cfg)
 }
