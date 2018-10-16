@@ -10,7 +10,7 @@ func TestId_Gen(t *testing.T) {
 	wg := sync.WaitGroup{}
 	factory := GeneratorFactory{}
 	gen := factory.CreateGenerator(AtomicGeneratorType, NewMeta(&MetaData{
-		epoch:     1514736000000,
+		epoch:     uint64(time.Now().UnixNano() / 1000000),
 		idType:    SecondIdType,
 		service:   1,
 		version:   1,

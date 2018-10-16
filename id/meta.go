@@ -22,12 +22,28 @@ type MetaData struct {
 }
 
 type Meta struct {
-	data *MetaData
+	MachineBit   int8
+	SeqBit       int8
+	TimestampBit int8
+	IdTypeBit    int8
+	VersionBit   int8
+	data         *MetaData
+}
+
+func NewMeta1(machineBit, seqBit, timestampBit, idTypeBit, versionBit int8) *Meta {
+	return &Meta{
+		MachineBit:   machineBit,
+		SeqBit:       seqBit,
+		TimestampBit: timestampBit,
+		IdTypeBit:    idTypeBit,
+		VersionBit:   versionBit,
+	}
 }
 
 func NewMeta(data *MetaData) *Meta {
 	return &Meta{data: data}
 }
+
 
 func (m *Meta) GetSeqBits() uint64 {
 	switch m.data.idType {
@@ -51,20 +67,37 @@ func (m *Meta) GetTimestampBits() uint64 {
 	}
 }
 
+func (m *Meta) GetSeqShift() uint64{
+	return uint64(m.MachineBit)
+}
+
 func (m *Meta) GetSequenceLeftShift() uint64 {
 	return MachineBits
+}
+
+func (m *Meta) GetTimestampShift() uint64 {
+	return uint64(m.MachineBit + m.SeqBit)
 }
 
 func (m *Meta) GetTimestampLeftShift() uint64 {
 	return MachineBits + m.GetSeqBits()
 }
 
+
 func (m *Meta) GetServiceLeftShift() uint64 {
 	return MachineBits + m.GetSeqBits() + m.GetTimestampBits()
 }
 
+func (m *Meta) GetIdTypeShift() uint64 {
+	return uint64(m.MachineBit + m.SeqBit + m.TimestampBit)
+}
+
 func (m *Meta) GetIdTypeLeftShift() uint64 {
 	return MachineBits + m.GetSeqBits() + m.GetTimestampBits() + ServiceBits
+}
+
+func (m *Meta) GetVersionShift() uint64{
+	return uint64(m.MachineBit + m.SeqBit + m.TimestampBit + m.VersionBit)
 }
 
 func (m *Meta) GetVersionLeftShift() uint64 {

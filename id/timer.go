@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+type TimerUtil struct {
+	idType    int8
+	epoch     uint64
+	sequence  uint64
+	timestamp uint64
+}
+
 func ExtractTimestamp(idType int, timestamp uint64, epoch uint64) uint64 {
 	if idType == SecondIdType {
 		return timestamp + (epoch / 1000)
