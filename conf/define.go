@@ -1,11 +1,11 @@
 package conf
 
-
 const (
 	UNICORN_CONF_FILE_ENV_KEY   = "UNICORN_CONF_FILE"
 	UNICORN_MACHINE_ID_ENV_KEY  = "UNICORN_MACHINE_ID"
 	UNICORN_ID_GEN_TYPE_ENV_KEY = "UNICORN_GEN_TYPE"
 )
+
 
 const (
 	// 最大忍受时间发生回拨时常 单位(毫秒)

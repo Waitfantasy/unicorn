@@ -9,13 +9,6 @@ type TimerUtil struct {
 	epoch  uint64
 }
 
-func NewTimerUtil(idType int, epoch uint64) *TimerUtil {
-	return &TimerUtil{
-		idType: idType,
-		epoch:  epoch,
-	}
-}
-
 func (t *TimerUtil) Timestamp() uint64 {
 	// 最大峰值类型, 使用秒级时间戳
 	if t.idType == SecondIdType {

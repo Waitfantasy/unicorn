@@ -1,83 +1,83 @@
 package id
 
 const (
-	MachineBits         = 10
-	SecondSeqBits       = 20
-	SecondTimestampBits = 30
-	MilliSecondSeqBits  = 10
-	MilliTimestampBits  = 40
-	ReservedBits        = 2
-	IdTypeBits          = 1
-	VersionBits         = 1
+	machineBits         = 10
+	secondSeqBits       = 20
+	secondTimestampBits = 30
+	milliSecondSeqBits  = 10
+	milliTimestampBits  = 40
+	reservedBits        = 2
+	idTypeBits          = 1
+	versionBits         = 1
 )
 
-type Meta struct {
-	MachineBit   uint8
-	SeqBit       uint8
-	TimestampBit uint8
-	ReservedBit  uint8
-	IdTypeBit    uint8
-	VersionBit   uint8
+type meta struct {
+	machineBit   uint8
+	seqBit       uint8
+	timestampBit uint8
+	reservedBit  uint8
+	idTypeBit    uint8
+	versionBit   uint8
 }
 
-var SecondMeta = &Meta{
-	MachineBit:   MachineBits,
-	SeqBit:       SecondSeqBits,
-	TimestampBit: SecondTimestampBits,
-	ReservedBit:  ReservedBits,
-	IdTypeBit:    IdTypeBits,
-	VersionBit:   VersionBits,
+var secondMeta = &meta{
+	machineBit:   machineBits,
+	seqBit:       secondSeqBits,
+	timestampBit: secondTimestampBits,
+	reservedBit:  reservedBits,
+	idTypeBit:    idTypeBits,
+	versionBit:   versionBits,
 }
 
-var MilliSecondMeta = &Meta{
-	MachineBit:   MachineBits,
-	SeqBit:       MilliSecondSeqBits,
-	TimestampBit: MilliTimestampBits,
-	ReservedBit:  ReservedBits,
-	IdTypeBit:    IdTypeBits,
-	VersionBit:   VersionBits,
+var milliSecondMeta = &meta{
+	machineBit:   machineBits,
+	seqBit:       milliSecondSeqBits,
+	timestampBit: milliTimestampBits,
+	reservedBit:  reservedBits,
+	idTypeBit:    idTypeBits,
+	versionBit:   versionBits,
 }
 
-func (m *Meta) GetSeqShift() uint64 {
-	return uint64(m.MachineBit)
+func (m *meta) GetSeqShift() uint64 {
+	return uint64(m.machineBit)
 }
 
-func (m *Meta) GetTimestampShift() uint64 {
-	return uint64(m.MachineBit + m.SeqBit)
+func (m *meta) GetTimestampShift() uint64 {
+	return uint64(m.machineBit + m.seqBit)
 }
 
-func (m *Meta) GetReservedShift() uint64 {
-	return uint64(m.MachineBit + m.SeqBit + m.TimestampBit)
+func (m *meta) GetReservedShift() uint64 {
+	return uint64(m.machineBit + m.seqBit + m.timestampBit)
 }
 
-func (m *Meta) GetIdTypeShift() uint64 {
-	return uint64(m.MachineBit + m.SeqBit + m.TimestampBit + m.ReservedBit)
+func (m *meta) GetIdTypeShift() uint64 {
+	return uint64(m.machineBit + m.seqBit + m.timestampBit + m.reservedBit)
 }
 
-func (m *Meta) GetVersionShift() uint64 {
-	return uint64(m.MachineBit + m.SeqBit + m.TimestampBit + m.ReservedBit + m.IdTypeBit)
+func (m *meta) GetVersionShift() uint64 {
+	return uint64(m.machineBit + m.seqBit + m.timestampBit + m.reservedBit + m.idTypeBit)
 }
 
-func (m *Meta) GetMaxMachine() int64 {
-	return -1 ^ - 1<<m.MachineBit
+func (m *meta) GetMaxMachine() int64 {
+	return -1 ^ - 1<<m.machineBit
 }
 
-func (m *Meta) GetMaxSequence() int64 {
-	return -1 ^ -1<<m.SeqBit
+func (m *meta) GetMaxSequence() int64 {
+	return -1 ^ -1<<m.seqBit
 }
 
-func (m *Meta) GetMaxTimestamp() int64 {
-	return -1 ^ -1<<m.TimestampBit
+func (m *meta) GetMaxTimestamp() int64 {
+	return -1 ^ -1<<m.timestampBit
 }
 
-func (m *Meta) GetMaxReserved() int64 {
-	return -1 ^ -1<<m.ReservedBit
+func (m *meta) GetMaxReserved() int64 {
+	return -1 ^ -1<<m.reservedBit
 }
 
-func (m *Meta) GetMaxIdType() int64 {
-	return -1 ^ -1<<m.IdTypeBit
+func (m *meta) GetMaxIdType() int64 {
+	return -1 ^ -1<<m.idTypeBit
 }
 
-func (m *Meta) GetMaxVersion() int64 {
-	return -1 ^ -1<<m.VersionBit
+func (m *meta) GetMaxVersion() int64 {
+	return -1 ^ -1<<m.versionBit
 }
