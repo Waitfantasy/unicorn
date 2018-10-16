@@ -1,36 +1,34 @@
 package conf
 
 import (
-	"encoding/json"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
 
-type EtcdConfig struct {
-	Cluster []string `json:"cluster"`
+type etcdConf struct {
+	Cluster []string `yaml:"cluster"`
 }
 
-type IdConfig struct {
-	Epoch               uint64 `json:"epoch"`
-	Version             int    `json:"version"`
-	IdGenType           int    `json:"id_gen_type"`
-	ReleaseType         int    `json:"release_type"`
-	MachineId           int    `json:"machine_id"`
-	MachineIp           string `json:"machine_ip"`
-	MachineIdAccessType int    `json:"machine_id_type"`
+type idConf struct {
+	Epoch     uint64 `yaml:"epoch"`
+	Version   int    `yaml:"version"`
+	IdType    int    `yaml:"idType"`
+	MachineId int    `yaml:"machineId"`
+	MachineIp string `yaml:"machineIp"`
 }
 
-type Config struct {
-	Etcd *EtcdConfig `json:"etcd"`
-	Id   *IdConfig   `json:"id"`
+type Conf struct {
+	Etcd *etcdConf `yaml:"etcd"`
+	Id   *idConf   `yaml:"id"`
 }
 
-func InitConfig(filename string) (*Config, error) {
+func InitConf(filename string) (*Conf, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	config := &Config{}
-	if err = json.Unmarshal(b, config); err != nil {
+	config := &Conf{}
+	if err = yaml.Unmarshal(b, config); err != nil {
 		return nil, err
 	}
 	return config, nil

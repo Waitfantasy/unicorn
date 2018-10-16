@@ -14,12 +14,12 @@ var filename string
 func main()  {
 	var (
 		err error
-		cfg *conf.Config
+		cfg *conf.Conf
 	)
 	flag.StringVar(&filename, "config", "", "")
 	flag.Parse()
 
-	if cfg, err = conf.InitConfig(filename); err != nil {
+	if cfg, err = conf.InitConf(filename); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(cfg)
