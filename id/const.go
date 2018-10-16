@@ -13,3 +13,8 @@ const (
 	ReleaseHttp  = 2
 	ReleaseGRpc  = 3
 )
+
+const (
+	SecondIdType                      = 0
+	MilliSecondIdType                 = 1
+)
