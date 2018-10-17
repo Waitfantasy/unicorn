@@ -5,8 +5,8 @@ const (
 	IdGranularityGenType = 1
 
 	// Machine Id Get Type
-	MachineIdLocal = 1
-	MachineIdEtcd  = 2
+	MachineIdLocalType = 0
+	MachineIdEtcdType  = 1
 
 	// Releases Type
 	ReleaseLocal = 1
