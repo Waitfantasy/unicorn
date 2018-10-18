@@ -1,8 +1,10 @@
 package machine
 
+import "go.etcd.io/etcd/clientv3"
+
 const (
-	MaxMachine = 1024
 	MinMachine = 1
+	MaxMachine = 1024
 )
 
 type Machiner interface {
@@ -10,7 +12,13 @@ type Machiner interface {
 	Get(ip string) (*Item, error)
 	Put(ip string) (*Item, error)
 	Del(ip string) (*Item, error)
-	Replace(id int, ip string) (*Item, *Item, error)
+	Reset(oldIp, newIp string) error
+}
+
+type MachineFactory struct {}
+
+func (f MachineFactory) CreateEtcdMachine(config clientv3.Config) *EtcdMachine{
+	return NewEtcdMachine(config)
 }
 
 func ValidMachineId(id int) bool {

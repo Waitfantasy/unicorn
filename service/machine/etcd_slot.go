@@ -1,20 +1,22 @@
 package machine
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 const maxFreeSlots = MaxMachine + 1
 
 type slots struct {
-	free [maxFreeSlots]int
-	last int
+	Free [maxFreeSlots]int
+	Use  int
 }
 
 
 
 func newSlots() *slots {
 	return &slots{
-		last:    0,
-		free: [maxFreeSlots]int{0: 1024,},
+		Use:  0,
+		Free: [maxFreeSlots]int{0: 1024,},
 	}
 }
 
@@ -31,8 +33,8 @@ func jsonMarshalSlots(s *slots) ([]byte, error) {
 }
 
 func (s *slots) findFreeIndex() int {
-	for i := 1; i < MaxMachine; i++ {
-		if s.free[i] == 0 {
+	for i := 1; i < maxFreeSlots; i++ {
+		if s.Free[i] == 0 {
 			return i
 		}
 	}

@@ -13,7 +13,7 @@ func Test_InitConfig(t *testing.T) {
 			IdType:    0,
 			Version:   0,
 		},
-		Etcd: &etcdConf{
+		Etcd: &EtcdConf{
 			Cluster: []string{
 				"192.168.10.10:2379",
 				"192.168.10.11:2379",

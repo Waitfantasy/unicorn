@@ -50,15 +50,6 @@ func (e *EtcdMachine) getSlots() (*slots, error) {
 	}
 
 	slots := newSlots()
-	b, err := jsonMarshalSlots(slots)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err = e.cli.Put(context.Background(), e.slotsKey, string(b)); err != nil {
-		return nil, err
-	}
-
 	return slots, nil
 }
 
@@ -67,7 +58,6 @@ func (e *EtcdMachine) putSlots(s *slots) error {
 	if err != nil {
 		return err
 	}
-
 	_, err = e.cli.Put(context.Background(), e.slotsKey, string(b))
 	return err
 }
@@ -123,44 +113,29 @@ func (e *EtcdMachine) Put(ip string) (*Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	if slots.last >= MaxMachine {
-		if index := slots.findFreeIndex(); index == 0 {
-			return nil, errors.New("no machine id available in free slot")
-		} else {
-			item := &Item{
-				Id: index,
-				Ip: ip,
-			}
 
-			if err = e.putItem(key, item); err != nil {
-				return nil, err
-			}
-
-			slots.free[index] = 1
-			for ; ; {
-				if err = e.putSlots(slots); err == nil {
-					break
-				}
-			}
-			return item, nil
-		}
-	} else {
-		slots.last++
-		item := &Item{
-			Id: slots.last,
-			Ip: ip,
-		}
-		if err = e.putItem(key, item); err != nil {
-			return nil, err
-		}
-		slots.free[slots.last] = 1
-		for ; ; {
-			if err = e.putSlots(slots); err == nil {
-				break
-			}
-		}
-		return item, nil
+	if slots.Use > MaxMachine {
+		return nil, errors.New("no machine id available in slots")
 	}
+
+	index := slots.findFreeIndex()
+	item = &Item{
+		Id: index,
+		Ip: ip,
+	}
+
+	if err = e.putItem(key, item); err != nil {
+		return nil, err
+	}
+
+	slots.Use++
+	slots.Free[index] = 1
+	for ; ; {
+		if err = e.putSlots(slots); err == nil {
+			break
+		}
+	}
+	return item, nil
 }
 
 func (e *EtcdMachine) putItem(key string, item *Item) error {
@@ -189,12 +164,11 @@ func (e *EtcdMachine) Del(ip string) (*Item, error) {
 		return nil, err
 	}
 
-	slots.free[item.Id] = 0
-
+	slots.Free[item.Id] = 0
+	slots.Use--
 	if err = e.putSlots(slots); err != nil {
 		return nil, err
 	}
-
 
 	if _, err = e.cli.Delete(context.Background(), key); err != nil {
 		return nil, err
@@ -203,22 +177,36 @@ func (e *EtcdMachine) Del(ip string) (*Item, error) {
 	return item, nil
 }
 
-func (e *EtcdMachine) Replace(id int, ip string) (*Item, *Item, error) {
-	key := e.key(ip)
+func (e *EtcdMachine) Reset(oldIp, newIp string) error {
+	if oldIp == newIp {
+		return nil
+	}
+
+	key := e.key(newIp)
 	item, err := e.get(key)
 	if err != nil {
-		return nil, nil, err
+		return err
+	}
+
+	if item != nil {
+		return fmt.Errorf("the machine ip %s already exists in etcd", newIp)
+	}
+
+	key = e.key(oldIp)
+	if item, err = e.get(key); err != nil {
+		return err
 	}
 
 	if item == nil {
-		return nil, nil, fmt.Errorf("the machine ip %s not exists in etcd", ip)
+		return fmt.Errorf("the machine ip %s not exists in etcd", oldIp)
 	}
 
-	if item.Id == id {
-		return item, item, nil
+	item.Ip = newIp
+	if err = e.putItem(e.key(newIp), item); err != nil {
+		return err
 	}
 
-	panic("impl me")
+	return nil
 }
 
 func (e *EtcdMachine) key(ip string) string {
