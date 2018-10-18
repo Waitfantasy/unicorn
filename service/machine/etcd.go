@@ -209,6 +209,10 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 	return nil
 }
 
+func (e *EtcdMachine) Report(ip string, lastTimestamp uint64) error {
+
+}
+
 func (e *EtcdMachine) key(ip string) string {
 	uint32Key := crc32.ChecksumIEEE([]byte(ip))
 	return e.prefixKey + strconv.Itoa(int(uint32Key))

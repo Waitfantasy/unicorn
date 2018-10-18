@@ -1,14 +1,15 @@
 etcd:
   cluster:
   - "192.168.10.10:2379"
+  - "192.168.10.11:2379"
 
 id:
   epoch: 1539660973223
   machineId: 1
-  machineIp: "127.0.0.1"
+  machineIp: "127.0.0.2"
   machineIdType: 1
-  idType: 0
-  version: 0
+  idType: 1
+  version: 1
 
 http:
   addr: "127.0.0.1:8888"
