@@ -11,13 +11,14 @@ type Machiner interface {
 	All() ([]*Item, error)
 	Get(ip string) (*Item, error)
 	Put(ip string) (*Item, error)
+	PutItem(item *Item) error
 	Del(ip string) (*Item, error)
 	Reset(oldIp, newIp string) error
 }
 
 type MachineFactory struct {}
 
-func (f MachineFactory) CreateEtcdMachine(config clientv3.Config) *EtcdMachine{
+func (f MachineFactory) CreateEtcdMachine(config clientv3.Config) (Machiner, error){
 	return NewEtcdMachine(config)
 }
 

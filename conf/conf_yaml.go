@@ -6,12 +6,12 @@ import (
 	"github.com/Waitfantasy/unicorn/service/machine"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	)
+)
 
 type YamlConf struct {
 	Id   *IdConf   `yaml:"id"`
 	Http *HttpConf `json:"http"`
-	Etcd *EtcdConf `yaml:"verify"`
+	Etcd *EtcdConf `yaml:"etcd"`
 }
 
 func InitYamlConf(filename string) (*YamlConf, error) {
@@ -54,7 +54,7 @@ func (c *YamlConf) Validate() error {
 	return nil
 }
 
-func (c *YamlConf) InitMachineId(machiner machine.Machiner) error {
+func (c *YamlConf) InitMachineId() error {
 	var (
 		id  int
 		err error
@@ -63,13 +63,13 @@ func (c *YamlConf) InitMachineId(machiner machine.Machiner) error {
 	case MachineIdLocalType:
 		id, err = c.FromLocalGetMachineId()
 	case MachineIdEtcdType:
-		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp, machiner)
+		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp)
 		if err != nil {
 			return err
 		}
 		id = item.Id
 	default:
-		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp, machiner)
+		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp)
 		if err != nil {
 			return err
 		}
@@ -91,14 +91,22 @@ func (c *YamlConf) FromLocalGetMachineId() (int, error) {
 	return c.Id.MachineId, nil
 }
 
-func (c *YamlConf) FromEtcdGetMachineItem(ip string, machiner machine.Machiner) (*machine.Item, error) {
+func (c *YamlConf) FromEtcdGetMachineItem(ip string) (*machine.Item, error) {
+	// create machiner
+	machinerFactory := &machine.MachineFactory{}
+	machiner, err := machinerFactory.CreateEtcdMachine(c.Etcd.CreateClientV3Config())
+	if err != nil {
+		return nil, err
+	}
+
+	defer machiner.(*machine.EtcdMachine).Close()
 	item, err := machiner.Get(ip)
 	if err != nil {
 		return nil, err
 	}
 
 	if item != nil {
-		fmt.Println("from verify get id: ", item.Id)
+		fmt.Println("get item: ", item)
 		return item, nil
 	}
 
@@ -107,7 +115,7 @@ func (c *YamlConf) FromEtcdGetMachineItem(ip string, machiner machine.Machiner) 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("put verify ip: ", item.Ip)
+	fmt.Println("put item: ", item)
 
 	return item, nil
 }

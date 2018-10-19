@@ -7,30 +7,24 @@ import (
 	"go.etcd.io/etcd/clientv3"
 	"hash/crc32"
 	"strconv"
-	"time"
 )
 
 type EtcdMachine struct {
 	prefixKey string
 	slotsKey  string
 	cli       *clientv3.Client
-	cfg       clientv3.Config
 }
 
-func NewEtcdMachine(config clientv3.Config) *EtcdMachine {
-	return &EtcdMachine{
-		prefixKey: "/unicorn_machine_items/",
-		slotsKey:  "unicorn_machine_slots",
-		cfg:       config,
-	}
-}
-
-func (e *EtcdMachine) Conn() error {
-	if cli, err := clientv3.New(e.cfg); err != nil {
-		return err
+func NewEtcdMachine(cfg clientv3.Config) (*EtcdMachine, error) {
+	clientv3.New(cfg)
+	if cli, err := clientv3.New(cfg); err != nil {
+		return nil, err
 	} else {
-		e.cli = cli
-		return nil
+		return &EtcdMachine{
+			prefixKey: "/unicorn_machine_items/",
+			slotsKey:  "unicorn_machine_slots",
+			cli:cli,
+		}, nil
 	}
 }
 
@@ -71,7 +65,7 @@ func (e *EtcdMachine) All() ([]*Item, error) {
 	}
 
 	for _, kv := range res.Kvs {
-		if item, err := jsonUnmarshalItem(kv.Value); err == nil {
+		if item, err := JsonUnmarshalItem(kv.Value); err == nil {
 			items = append(items, item)
 		}
 	}
@@ -92,7 +86,7 @@ func (e *EtcdMachine) get(key string) (*Item, error) {
 
 	for _, kv := range res.Kvs {
 		if string(kv.Key) == key {
-			return jsonUnmarshalItem(kv.Value)
+			return JsonUnmarshalItem(kv.Value)
 		}
 	}
 
@@ -121,11 +115,12 @@ func (e *EtcdMachine) Put(ip string) (*Item, error) {
 
 	index := slots.findFreeIndex()
 	item = &Item{
-		Id: index,
-		Ip: ip,
+		Key: key,
+		Id:  index,
+		Ip:  ip,
 	}
 
-	if err = e.putItem(key, item); err != nil {
+	if err = e.PutItem(item); err != nil {
 		return nil, err
 	}
 
@@ -139,13 +134,13 @@ func (e *EtcdMachine) Put(ip string) (*Item, error) {
 	return item, nil
 }
 
-func (e *EtcdMachine) putItem(key string, item *Item) error {
-	b, err := jsonMarshalItem(item)
+func (e *EtcdMachine) PutItem(item *Item) error {
+	b, err := JsonMarshalItem(item)
 	if err != nil {
 		return err
 	}
 
-	_, err = e.cli.Put(context.Background(), key, string(b))
+	_, err = e.cli.Put(context.Background(), item.Key, string(b))
 	return err
 }
 
@@ -183,8 +178,8 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 		return nil
 	}
 
-	key := e.key(newIp)
-	item, err := e.get(key)
+	newKey := e.key(newIp)
+	item, err := e.get(newKey)
 	if err != nil {
 		return err
 	}
@@ -193,40 +188,22 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 		return fmt.Errorf("the machine ip %s already exists in verify", newIp)
 	}
 
-	key = e.key(oldIp)
-	if item, err = e.get(key); err != nil {
+	oldKey := e.key(oldIp)
+	if item, err = e.get(oldKey); err != nil {
 		return err
 	}
 
 	if item == nil {
-		return fmt.Errorf("the machine ip %s not exists in verify", oldIp)
+		return fmt.Errorf("the machine ip %s not exists in etcd", oldIp)
 	}
 
+	item.Key = newKey
 	item.Ip = newIp
-	if err = e.putItem(e.key(newIp), item); err != nil {
+	if err = e.PutItem(item); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (e *EtcdMachine) Report(item *Item, second time.Duration) error {
-	t := time.NewTimer(second)
-	key := e.key(item.Ip)
-	for {
-		select {
-		case <-t.C:
-			item.LastTimestamp = Timestamp()
-			// TODO debug
-			fmt.Printf("report timestamp: %d\n", item.LastTimestamp)
-			e.report(key, item)
-			t.Reset(second)
-		}
-	}
-}
-
-func (e *EtcdMachine) report(key string, item *Item)  error{
-	return e.putItem(key, item)
 }
 
 func (e *EtcdMachine) key(ip string) string {

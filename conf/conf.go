@@ -4,12 +4,12 @@ import "github.com/Waitfantasy/unicorn/service/machine"
 
 type Confer interface {
 	Validate() error
-	InitMachineId(machine.Machiner) error
+	InitMachineId() error
 	GetIdConf() *IdConf
 	GetHttpConf() *HttpConf
 	GetEtcdConf() *EtcdConf
 	FromLocalGetMachineId() (int, error)
-	FromEtcdGetMachineItem(string, machine.Machiner) (*machine.Item, error)
+	FromEtcdGetMachineItem(string) (*machine.Item, error)
 }
 
 type Factory struct {

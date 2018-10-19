@@ -2,6 +2,7 @@ package machine
 
 import (
 	"go.etcd.io/etcd/clientv3"
+	"log"
 	"strconv"
 	"testing"
 )
@@ -9,19 +10,19 @@ import (
 var ip = "1.0.0.1"
 
 func newEtcdMachine() *EtcdMachine {
-	return NewEtcdMachine(clientv3.Config{
+	e, err := NewEtcdMachine(clientv3.Config{
 		Endpoints: []string{
 			"192.168.10.10:2379",
 		},
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return e
 }
 
 func Test_init(t *testing.T)  {
 	e := newEtcdMachine()
-	if err := e.Conn(); err != nil {
-		t.Error(err)
-		return
-	}
 
 	defer func() {
 		if err := e.Close(); err != nil {
@@ -36,10 +37,6 @@ func Test_init(t *testing.T)  {
 
 func TestEtcdMachine_Put(t *testing.T) {
 	e := newEtcdMachine()
-	if err := e.Conn(); err != nil {
-		t.Error(err)
-		return
-	}
 
 	defer func() {
 		if err := e.Close(); err != nil {
@@ -86,10 +83,6 @@ func TestEtcdMachine_Put(t *testing.T) {
 
 func TestEtcdMachine_Get(t *testing.T) {
 	e := newEtcdMachine()
-	if err := e.Conn(); err != nil {
-		t.Error(err)
-		return
-	}
 
 	defer func() {
 		if err := e.Close(); err != nil {
@@ -120,10 +113,6 @@ func TestEtcdMachine_Get(t *testing.T) {
 
 func TestEtcdMachine_Reset(t *testing.T) {
 	e := newEtcdMachine()
-	if err := e.Conn(); err != nil {
-		t.Error(err)
-		return
-	}
 
 	defer func() {
 		if err := e.Close(); err != nil {
@@ -156,10 +145,6 @@ func TestEtcdMachine_Reset(t *testing.T) {
 
 func TestEtcdMachine_Del(t *testing.T) {
 	e := newEtcdMachine()
-	if err := e.Conn(); err != nil {
-		t.Error(err)
-		return
-	}
 
 	defer func() {
 		if err := e.Close(); err != nil {
@@ -191,10 +176,6 @@ func TestEtcdMachine_Del(t *testing.T) {
 
 func TestEtcdMachine_All(t *testing.T) {
 	e := newEtcdMachine()
-	if err := e.Conn(); err != nil {
-		t.Error(err)
-		return
-	}
 
 	defer func() {
 		if err := e.Close(); err != nil {

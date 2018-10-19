@@ -8,7 +8,7 @@ import (
 
 const maxEndureMs = 5
 
-func VerifyMachineTimestamp(item *machine.Item) error {
+func MachineTimestamp(item *machine.Item) error {
 	now := machine.Timestamp()
 	if now < item.LastTimestamp {
 		if offset := item.LastTimestamp - now; offset < maxEndureMs {

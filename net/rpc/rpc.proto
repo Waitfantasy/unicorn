@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+message Void {
+}
+
+message ResponseExtract {
+    int64 machineId = 1;
+    uint64 sequence = 2;
+    uint64 timestamp = 3;
+    int64 reserved = 4;
+    int64 idType = 5;
+    int64 version = 6;
+}
+
+message RequestExtract {
+    uint64 uuid = 1;
+}
+
+message ResponseUUID {
+    uint64 uuid = 1;
+}
+
+service TaskService {
+    rpc GetUUID (Void) returns (ResponseUUID);
+    rpc Extract (RequestExtract) returns (ResponseExtract);
+}

@@ -3,12 +3,13 @@ package machine
 import "encoding/json"
 
 type Item struct {
+	Key           string
 	Id            int
 	Ip            string
 	LastTimestamp uint64
 }
 
-func jsonUnmarshalItem(data []byte) (*Item, error) {
+func JsonUnmarshalItem(data []byte) (*Item, error) {
 	item := &Item{}
 	if err := json.Unmarshal(data, item); err != nil {
 		return nil, err
@@ -16,6 +17,6 @@ func jsonUnmarshalItem(data []byte) (*Item, error) {
 	return item, nil
 }
 
-func jsonMarshalItem(item *Item) ([]byte, error) {
+func JsonMarshalItem(item *Item) ([]byte, error) {
 	return json.Marshal(item)
 }

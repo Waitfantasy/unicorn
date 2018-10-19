@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"github.com/Waitfantasy/unicorn/conf"
 	"github.com/Waitfantasy/unicorn/net/restful"
-	"log"
-	"github.com/Waitfantasy/unicorn/service/machine"
+	"github.com/Waitfantasy/unicorn/service"
 	"github.com/Waitfantasy/unicorn/service/verify"
+	"log"
+	"time"
 )
 
 var filename string
 
 func main() {
 	var (
-		c conf.Confer
+		c   conf.Confer
 		err error
 	)
 	flag.StringVar(&filename, "config", "/etc/unicorn/unicorn.yaml", "")
@@ -32,26 +33,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// create machiner
-	machinerFactory := &machine.MachineFactory{}
-	machiner := machinerFactory.CreateEtcdMachine(c.GetEtcdConf().CreateClientV3Config())
-
 	// init machine id
-	if err = c.InitMachineId(machiner); err != nil {
+	if err = c.InitMachineId(); err != nil {
 		log.Fatal(err)
 	}
 
-	// verify machine timestamp
-	item, err := c.FromEtcdGetMachineItem(c.GetIdConf().MachineIp, machiner)
+	item, err := c.FromEtcdGetMachineItem(c.GetIdConf().MachineIp)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = verify.VerifyMachineTimestamp(item); err != nil {
+	// verify machine timestamp
+	if err = verify.MachineTimestamp(item); err != nil {
 		log.Fatal(err)
 	}
 
-	go machiner.Report(item, 3)
+	go service.Report(item, time.Second*3, c.GetEtcdConf().CreateClientV3Config())
 
 	restfulServer := restful.NewServer(c)
 	if err = restfulServer.ListenAndServe(); err != nil {
