@@ -5,10 +5,34 @@ etcd:
 id:
   epoch: 1539660973223
   machineId: 1
-  machineIp: "127.0.0.2"
+  machineIp: "127.0.0.1"
   machineIdType: 1
   idType: 1
   version: 1
 
 http:
   addr: "127.0.0.1:8888"
+
+log:
+  enable: true
+
+  # default: error
+  level: "debug|warning|error"
+
+  # stdout: 0 file: 1 network: 2
+  output: 0
+
+  # default: false
+  split: false
+
+  # hour: 0 day: 1 week: 2 month: 3 year: 4
+  splitDimension:
+
+  # default: /var/run/log/unicorn
+  filename: ""
+
+  # default: unicorn
+  filePrefix: ""
+
+  # default: .log
+  fileSuffix: ""
