@@ -6,12 +6,12 @@ import (
 	"github.com/Waitfantasy/unicorn/service/machine"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-)
+	)
 
 type YamlConf struct {
 	Id   *IdConf   `yaml:"id"`
 	Http *HttpConf `json:"http"`
-	Etcd *EtcdConf `yaml:"etcd"`
+	Etcd *EtcdConf `yaml:"verify"`
 }
 
 func InitYamlConf(filename string) (*YamlConf, error) {
@@ -54,18 +54,26 @@ func (c *YamlConf) Validate() error {
 	return nil
 }
 
-func (c *YamlConf) InitMachineId() error {
+func (c *YamlConf) InitMachineId(machiner machine.Machiner) error {
 	var (
 		id  int
 		err error
 	)
 	switch c.Id.MachineIdType {
 	case MachineIdLocalType:
-		id, err = c.fromLocalGetMachineId()
+		id, err = c.FromLocalGetMachineId()
 	case MachineIdEtcdType:
-		id, err = c.fromEtcdGetMachineId(c.Id.MachineIp)
+		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp, machiner)
+		if err != nil {
+			return err
+		}
+		id = item.Id
 	default:
-		id, err = c.fromEtcdGetMachineId(c.Id.MachineIp)
+		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp, machiner)
+		if err != nil {
+			return err
+		}
+		id = item.Id
 	}
 
 	if err != nil {
@@ -76,41 +84,32 @@ func (c *YamlConf) InitMachineId() error {
 	return nil
 }
 
-func (c *YamlConf) fromLocalGetMachineId() (int, error) {
+func (c *YamlConf) FromLocalGetMachineId() (int, error) {
 	if !machine.ValidMachineId(c.Id.MachineId) {
 		return 0, errors.New("machine id range from 1 ~ 1024")
 	}
 	return c.Id.MachineId, nil
 }
 
-func (c *YamlConf) fromEtcdGetMachineId(ip string) (int, error) {
-	cfg := c.Etcd.createClientV3Config()
-	factory := machine.MachineFactory{}
-	e := factory.CreateEtcdMachine(cfg)
-	if err := e.Conn(); err != nil {
-		return 0, err
-	}
-
-	defer e.Close()
-
-	item, err := e.Get(ip)
+func (c *YamlConf) FromEtcdGetMachineItem(ip string, machiner machine.Machiner) (*machine.Item, error) {
+	item, err := machiner.Get(ip)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if item != nil {
-		fmt.Println("from etcd get id: ", item.Id)
-		return item.Id, nil
+		fmt.Println("from verify get id: ", item.Id)
+		return item, nil
 	}
 
 	// create new machine id
-	item, err = e.Put(ip)
+	item, err = machiner.Put(ip)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	fmt.Println("put etcd ip: ", item.Ip)
+	fmt.Println("put verify ip: ", item.Ip)
 
-	return item.Id, nil
+	return item, nil
 }
 
 func (c *YamlConf) GetIdConf() *IdConf {

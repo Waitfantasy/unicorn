@@ -30,7 +30,7 @@ func (c *IdConf) ValidateMachineIdType() error{
 	case MachineIdEtcdType:
 		return nil
 	default:
-		return fmt.Errorf("the way to get machine id support types: \n\t%d: local type\n\t%d: etcd type\n",
+		return fmt.Errorf("the way to get machine id support types: \n\t%d: local type\n\t%d: verify type\n",
 			MachineIdLocalType, MachineIdEtcdType)
 	}
 }

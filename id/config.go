@@ -23,7 +23,7 @@ type IdConfig struct {
 }
 
 type Config struct {
-	Etcd *EtcdConfig `json:"etcd"`
+	Etcd *EtcdConfig `json:"verify"`
 	Id   *IdConfig   `json:"id"`
 }
 

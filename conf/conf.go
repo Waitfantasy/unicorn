@@ -1,13 +1,15 @@
 package conf
 
+import "github.com/Waitfantasy/unicorn/service/machine"
+
 type Confer interface {
-	Validate() (error)
-	InitMachineId() error
+	Validate() error
+	InitMachineId(machine.Machiner) error
 	GetIdConf() *IdConf
 	GetHttpConf() *HttpConf
 	GetEtcdConf() *EtcdConf
-	fromLocalGetMachineId() (int, error)
-	fromEtcdGetMachineId(ip string) (int, error)
+	FromLocalGetMachineId() (int, error)
+	FromEtcdGetMachineItem(string, machine.Machiner) (*machine.Item, error)
 }
 
 type Factory struct {

@@ -8,7 +8,7 @@ type EtcdConf struct {
 }
 
 
-func (e *EtcdConf) createClientV3Config() clientv3.Config {
+func (e *EtcdConf) CreateClientV3Config() clientv3.Config {
 	return clientv3.Config{
 		Endpoints: e.Cluster,
 	}

@@ -7,6 +7,7 @@ import (
 	"go.etcd.io/etcd/clientv3"
 	"hash/crc32"
 	"strconv"
+	"time"
 )
 
 type EtcdMachine struct {
@@ -106,7 +107,7 @@ func (e *EtcdMachine) Put(ip string) (*Item, error) {
 	}
 
 	if item != nil {
-		return nil, fmt.Errorf("the machine ip %s already exists in etcd", ip)
+		return nil, fmt.Errorf("the machine ip %s already exists in verify", ip)
 	}
 
 	slots, err := e.getSlots()
@@ -189,7 +190,7 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 	}
 
 	if item != nil {
-		return fmt.Errorf("the machine ip %s already exists in etcd", newIp)
+		return fmt.Errorf("the machine ip %s already exists in verify", newIp)
 	}
 
 	key = e.key(oldIp)
@@ -198,7 +199,7 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 	}
 
 	if item == nil {
-		return fmt.Errorf("the machine ip %s not exists in etcd", oldIp)
+		return fmt.Errorf("the machine ip %s not exists in verify", oldIp)
 	}
 
 	item.Ip = newIp
@@ -209,8 +210,23 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 	return nil
 }
 
-func (e *EtcdMachine) Report(ip string, lastTimestamp uint64) error {
+func (e *EtcdMachine) Report(item *Item, second time.Duration) error {
+	t := time.NewTimer(second)
+	key := e.key(item.Ip)
+	for {
+		select {
+		case <-t.C:
+			item.LastTimestamp = Timestamp()
+			// TODO debug
+			fmt.Printf("report timestamp: %d\n", item.LastTimestamp)
+			e.report(key, item)
+			t.Reset(second)
+		}
+	}
+}
 
+func (e *EtcdMachine) report(key string, item *Item)  error{
+	return e.putItem(key, item)
 }
 
 func (e *EtcdMachine) key(ip string) string {
