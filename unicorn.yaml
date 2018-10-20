@@ -20,7 +20,7 @@ log:
   level: "debug|warning|error"
 
   # stdout: 0 file: 1 network: 2
-  output: 0
+  output:  "console|file"
 
   # default: false
   split: false
@@ -29,7 +29,7 @@ log:
   splitDimension:
 
   # default: /var/run/log/unicorn
-  filename: ""
+  filepath: ""
 
   # default: unicorn
   filePrefix: ""

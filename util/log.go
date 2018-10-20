@@ -21,7 +21,40 @@ const (
 )
 
 type Log struct {
-	writer io.Writer
+	debug bool
+	info  bool
+	warn  bool
+	err   bool
+	path  string
+
+	fileOut    bool
+	consoleOut bool
+	writer     io.Writer
+}
+
+func (l *Log) SetDebugLevel() {
+	l.debug = true
+}
+
+func (l *Log) SetInfoLevel() {
+	l.info = true
+}
+
+func (l *Log) SetWarnLevel() {
+	l.warn = true
+}
+
+func (l *Log) SetErrLevel() {
+	l.err = true
+}
+
+func (l *Log) SetConsoleOut() {
+	l.consoleOut = true
+}
+
+func (l *Log) SetFileOut(path string) {
+	l.path = path
+	l.fileOut = true
 }
 
 func NewLogger(w io.Writer) *Log {
@@ -97,16 +130,42 @@ func (l *Log) createLevelLog(level int) *log.Logger {
 	prefix := ""
 	switch level {
 	case LDebug:
-		prefix = LOG_PREFIX_DEBUG
-		return log.New(l.writer, LOG_PREFIX_DEBUG, flag)
+		if l.debug {
+			//prefix = LOG_PREFIX_DEBUG
+			//return log.New(l.writer, LOG_PREFIX_DEBUG, flag)
+		}
 	case LInfo:
-		prefix = LOG_PREFIX_INFO
+		if l.info {
+
+		}
+		//prefix = LOG_PREFIX_INFO
 	case LWarn:
-		prefix = LOG_PREFIX_WARNING
+		if l.warn {
+
+		}
+		//prefix = LOG_PREFIX_WARNING
 	case LErr:
+		if l.err {
+
+		}
 		prefix = LOG_PREFIX_ERROR
 	default:
 		prefix = "yc-snowflake"
 	}
 	return log.New(l.writer, prefix, flag)
+}
+
+func (l *Log) createWriters() []io.Writer  {
+	var writers []io.Writer
+	if l.consoleOut {
+		writers = append(writers, os.Stdout)
+	}
+
+	if l.fileOut {
+
+	}
+}
+
+func (l *Log) createFileWriter() (io.Writer, error) {
+
 }
