@@ -8,6 +8,7 @@ type Confer interface {
 	GetIdConf() *IdConf
 	GetHttpConf() *HttpConf
 	GetEtcdConf() *EtcdConf
+	GetGRpcConf() *GRpcConf
 	FromLocalGetMachineId() (int, error)
 	FromEtcdGetMachineItem(string) (*machine.Item, error)
 }
@@ -15,6 +16,6 @@ type Confer interface {
 type Factory struct {
 }
 
-func (f Factory) CreateYamlConf(filename string) (Confer, error){
+func (f Factory) CreateYamlConf(filename string) (Confer, error) {
 	return InitYamlConf(filename)
 }

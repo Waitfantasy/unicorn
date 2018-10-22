@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/Waitfantasy/unicorn/conf"
 	"github.com/Waitfantasy/unicorn/net/restful"
+	"github.com/Waitfantasy/unicorn/net/rpc"
 	"github.com/Waitfantasy/unicorn/service"
 	"github.com/Waitfantasy/unicorn/service/verify"
 	"log"
+	"runtime"
 	"time"
 )
 
@@ -50,8 +52,17 @@ func main() {
 
 	go service.Report(item, time.Second*3, c.GetEtcdConf().CreateClientV3Config())
 
+	// grp server
+	for i := 0; i < runtime.GOMAXPROCS(runtime.NumCPU()); i++ {
+		go func() {
+			rpc.NewTaskServer(c).ListenAndServe()
+		}()
+	}
+
+	// restful server
 	restfulServer := restful.NewServer(c)
 	if err = restfulServer.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+
 }

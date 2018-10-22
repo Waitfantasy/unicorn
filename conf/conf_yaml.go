@@ -12,6 +12,7 @@ type YamlConf struct {
 	Id   *IdConf   `yaml:"id"`
 	Http *HttpConf `json:"http"`
 	Etcd *EtcdConf `yaml:"etcd"`
+	GRpc *GRpcConf `yaml:"grpc"`
 }
 
 func InitYamlConf(filename string) (*YamlConf, error) {
@@ -48,6 +49,10 @@ func (c *YamlConf) Validate() error {
 	}
 
 	if err := c.Http.ValidateClientAuth(); err != nil {
+		return err
+	}
+
+	if err := c.GRpc.ValidateEnableTLS(); err != nil {
 		return err
 	}
 
@@ -130,4 +135,8 @@ func (c *YamlConf) GetHttpConf() *HttpConf {
 
 func (c *YamlConf) GetEtcdConf() *EtcdConf {
 	return c.Etcd
+}
+
+func (c *YamlConf) GetGRpcConf() *GRpcConf  {
+	return c.GRpc
 }
