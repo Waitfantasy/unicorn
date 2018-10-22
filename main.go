@@ -11,6 +11,7 @@ import (
 	"log"
 	"runtime"
 	"time"
+	"os"
 )
 
 var filename string
@@ -49,7 +50,6 @@ func main() {
 	if err = verify.MachineTimestamp(item); err != nil {
 		log.Fatal(err)
 	}
-
 	go service.Report(item, time.Second*3, c.GetEtcdConf().CreateClientV3Config())
 
 	// grp server
