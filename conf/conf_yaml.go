@@ -13,6 +13,7 @@ type YamlConf struct {
 	Http *HttpConf `json:"http"`
 	Etcd *EtcdConf `yaml:"etcd"`
 	GRpc *GRpcConf `yaml:"grpc"`
+	Log  *LogConf  `yaml:"log"`
 }
 
 func InitYamlConf(filename string) (*YamlConf, error) {
@@ -66,15 +67,15 @@ func (c *YamlConf) InitMachineId() error {
 	)
 	switch c.Id.MachineIdType {
 	case MachineIdLocalType:
-		id, err = c.FromLocalGetMachineId()
+		id, err = c.fromLocalGetMachineId()
 	case MachineIdEtcdType:
-		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp)
+		item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp)
 		if err != nil {
 			return err
 		}
 		id = item.Id
 	default:
-		item, err := c.FromEtcdGetMachineItem(c.Id.MachineIp)
+		item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp)
 		if err != nil {
 			return err
 		}
@@ -89,23 +90,22 @@ func (c *YamlConf) InitMachineId() error {
 	return nil
 }
 
-func (c *YamlConf) FromLocalGetMachineId() (int, error) {
+func (c *YamlConf) fromLocalGetMachineId() (int, error) {
 	if !machine.ValidMachineId(c.Id.MachineId) {
 		return 0, errors.New("machine id range from 1 ~ 1024")
 	}
 	return c.Id.MachineId, nil
 }
 
-func (c *YamlConf) FromEtcdGetMachineItem(ip string) (*machine.Item, error) {
-	// create machiner
-	machinerFactory := &machine.MachineFactory{}
-	machiner, err := machinerFactory.CreateEtcdMachine(c.Etcd.CreateClientV3Config())
+func (c *YamlConf) fromEtcdGetMachineItem(ip string) (*machine.Item, error) {
+	// create machineService
+	machineService, err := machine.NewEtcdMachine(c.Etcd.GetClientConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	defer machiner.(*machine.EtcdMachine).Close()
-	item, err := machiner.Get(ip)
+	defer machineService.Close()
+	item, err := machineService.Get(ip)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (c *YamlConf) FromEtcdGetMachineItem(ip string) (*machine.Item, error) {
 	}
 
 	// create new machine id
-	item, err = machiner.Put(ip)
+	item, err = machineService.Put(ip)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +137,20 @@ func (c *YamlConf) GetEtcdConf() *EtcdConf {
 	return c.Etcd
 }
 
-func (c *YamlConf) GetGRpcConf() *GRpcConf  {
+func (c *YamlConf) GetGRpcConf() *GRpcConf {
 	return c.GRpc
+}
+
+func (c *YamlConf) GetLogConf() *LogConf  {
+	return c.Log
+}
+
+func (c *YamlConf) NewMachine(name string) (machine.Machiner, error){
+	switch name {
+	case "etcd":
+		cfg := c.GetEtcdConf().GetClientConfig()
+		return machine.NewEtcdMachine(cfg)
+	default:
+		return nil, errors.New("no support machine service")
+	}
 }

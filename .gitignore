@@ -1,2 +1,5 @@
 .idea
 *.exe
+vendor
+server.pem
+server-key.pem

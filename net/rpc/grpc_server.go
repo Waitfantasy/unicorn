@@ -10,21 +10,20 @@ import (
 )
 
 type TaskServer struct {
-	c         conf.Confer
-	generator *id.AtomicGenerator
+	c conf.Confer
+	g *id.AtomicGenerator
 }
 
-func NewTaskServer(c conf.Confer) *TaskServer {
-	idConf := c.GetIdConf()
+func NewTaskServer(c conf.Confer, generator *id.AtomicGenerator) *TaskServer {
 	return &TaskServer{
-		c:         c,
-		generator: id.NewAtomicGenerator(id.NewId(idConf.MachineId, idConf.IdType, idConf.Version, idConf.Epoch)),
+		c: c,
+		g: generator,
 	}
 }
 
 func (s *TaskServer) GetUUID(ctx context.Context, void *Void) (*ResponseUUID, error) {
 	res := &ResponseUUID{}
-	uuid, err := s.generator.Make()
+	uuid, err := s.g.Make()
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +33,7 @@ func (s *TaskServer) GetUUID(ctx context.Context, void *Void) (*ResponseUUID, er
 }
 
 func (s *TaskServer) Extract(ctx context.Context, extract *RequestExtract) (*ResponseExtract, error) {
-	data := s.generator.Extract(extract.Uuid)
+	data := s.g.Extract(extract.Uuid)
 	return &ResponseExtract{
 		MachineId: int64(data.MachineId),
 		Sequence:  data.Sequence,

@@ -66,6 +66,7 @@ func (e *EtcdMachine) All() ([]*Item, error) {
 
 	for _, kv := range res.Kvs {
 		if item, err := JsonUnmarshalItem(kv.Value); err == nil {
+			item.Key = string(kv.Key)
 			items = append(items, item)
 		}
 	}
@@ -195,6 +196,11 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 
 	if item == nil {
 		return fmt.Errorf("the machine ip %s not exists in etcd", oldIp)
+	}
+
+	// delete old machine by old key
+	if _, err = e.cli.Delete(context.Background(), oldKey); err != nil {
+		return err
 	}
 
 	item.Key = newKey

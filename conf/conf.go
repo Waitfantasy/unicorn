@@ -9,8 +9,8 @@ type Confer interface {
 	GetHttpConf() *HttpConf
 	GetEtcdConf() *EtcdConf
 	GetGRpcConf() *GRpcConf
-	FromLocalGetMachineId() (int, error)
-	FromEtcdGetMachineItem(string) (*machine.Item, error)
+	GetLogConf() *LogConf
+	NewMachine(name string) (machine.Machiner, error)
 }
 
 type Factory struct {

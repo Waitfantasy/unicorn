@@ -3,10 +3,10 @@ package machine
 import "encoding/json"
 
 type Item struct {
-	Key           string
-	Id            int
-	Ip            string
-	LastTimestamp uint64
+	Key           string `json:"key"`
+	Id            int    `json:"id"`
+	Ip            string `json:"ip"`
+	LastTimestamp uint64 `json:"last_timestamp"`
 }
 
 func JsonUnmarshalItem(data []byte) (*Item, error) {

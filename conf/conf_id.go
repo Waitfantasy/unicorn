@@ -58,3 +58,7 @@ func (c *IdConf) ValidateVersion() error{
 			UnavailableVersion, NormalVersion)
 	}
 }
+
+func (c *IdConf) NewAtomicGenerator() *id.AtomicGenerator {
+	return id.NewAtomicGenerator(id.NewId(c.MachineId, c.IdType, c.Version, c.Epoch))
+}

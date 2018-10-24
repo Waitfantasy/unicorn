@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  digest = "1:f1cb51b0af73a6afb5b757de5b0c4a3554a763f390e312a146a1778b1a0c6392"
-  name = "github.com/Waitfantasy/unicorn-service"
-  packages = ["machine"]
-  pruneopts = "UT"
-  revision = "f158c817268dce4f678671a6391d04469c4900e3"
-  version = "v1.0.1"
-
-[[projects]]
   digest = "1:a723c36de8c867d5733363ecd5484d8b39a3879d2ff0a397963973e7c14ebed5"
   name = "github.com/coreos/etcd"
   packages = [
@@ -22,6 +14,27 @@
   pruneopts = "UT"
   revision = "27fc7e2296f506182f58ce846e48f36b34fe6842"
   version = "v3.3.10"
+
+[[projects]]
+  branch = "master"
+  digest = "1:36fe9527deed01d2a317617e59304eb2c4ce9f8a24115bcc5c2e37b3aee5bae4"
+  name = "github.com/gin-contrib/sse"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
+
+[[projects]]
+  digest = "1:9a20e959f4a4b52a79155282a67046fa49869993732ef6d5bc3c48b3e18692cc"
+  name = "github.com/gin-gonic/gin"
+  packages = [
+    ".",
+    "binding",
+    "json",
+    "render",
+  ]
+  pruneopts = "UT"
+  revision = "b869fe1415e4b9eb52f247441830d502aece2d4d"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:2949684c4d8bfe3c5aba1c60d6d64f02061c0db3057791cbab4b2c2c2b912fb4"
@@ -50,6 +63,46 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:3e551bbb3a7c0ab2a2bf4660e7fcad16db089fdcfbb44b0199e62838038623ea"
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
+  version = "v1.1.5"
+
+[[projects]]
+  digest = "1:0981502f9816113c9c8c4ac301583841855c8cf4da8c72f696b3ebedf6d0e4e5"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
+
+[[projects]]
+  digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  digest = "1:e32bdbdb7c377a07a9a46378290059822efdce5c8d96fe71940d87cb4f918855"
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
+
+[[projects]]
+  digest = "1:03aa6e485e528acb119fb32901cf99582c380225fc7d5a02758e08b180cb56c3"
+  name = "github.com/ugorji/go"
+  packages = ["codec"]
+  pruneopts = "UT"
+  revision = "b4c50a2b199d93b13dc15e78929cfb23bfdf21ab"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:2fa940ed59a80c16b48d2f14a32c156a0e1e96006fe4397394035f13cd0cf75c"
   name = "go.etcd.io/etcd"
   packages = ["clientv3"]
@@ -72,6 +125,14 @@
   ]
   pruneopts = "UT"
   revision = "04a2e542c03f1d053ab3e4d6e5abcd4b66e2be8e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:2e50f1b357b5045529ef66440674e7b17f5e433df8aaac85d10c4ab61dc70eb4"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  pruneopts = "UT"
+  revision = "44b849a8bc13eb42e95e6c6c5e360481b73ec710"
 
 [[projects]]
   digest = "1:7509ba4347d1f8de6ae9be8818b0cd1abc3deeffe28aeaf4be6d4b6b5178d9ca"
@@ -105,31 +166,48 @@
   revision = "94acd270e44e65579b9ee3cdab25034d33fed608"
 
 [[projects]]
-  digest = "1:4d087fca5438b6c67611d96efc6165d99e3793dba9aba7fa4f3356e6795915ec"
+  digest = "1:46c380200d43a959436d99834c7ffcdd34672b22f3b4800e14e2588ea1f7f1d3"
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
     "codes",
     "connectivity",
     "credentials",
-    "grpclb/grpc_lb_v1/messages",
+    "encoding",
+    "encoding/proto",
     "grpclog",
     "health/grpc_health_v1",
     "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/transport",
     "keepalive",
     "metadata",
     "naming",
     "peer",
     "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
     "stats",
     "status",
     "tap",
-    "transport",
   ]
   pruneopts = "UT"
-  revision = "5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e"
-  version = "v1.7.5"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
+
+[[projects]]
+  digest = "1:cbc72c4c4886a918d6ab4b95e347ffe259846260f99ebdd8a198c2331cf2b2e9"
+  name = "gopkg.in/go-playground/validator.v8"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5f1438d3fca68893a817e4a66806cea46a9e4ebf"
+  version = "v8.18.2"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
@@ -143,11 +221,12 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/Waitfantasy/unicorn-service/machine",
+    "github.com/gin-gonic/gin",
     "github.com/golang/protobuf/proto",
     "go.etcd.io/etcd/clientv3",
     "golang.org/x/net/context",
     "google.golang.org/grpc",
+    "google.golang.org/grpc/credentials",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

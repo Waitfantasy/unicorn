@@ -1,40 +1,38 @@
 package conf
 
 import (
-	"github.com/Waitfantasy/unicorn/util"
+	"github.com/Waitfantasy/unicorn/util/logger"
 	"strings"
-		"os"
 )
 
-
-const UnixDefaultLogFilepath = "/var/run/log/unicorn"
-
 type LogConf struct {
-	Enable         bool   `yaml:"enable"`
-	Level          string `yaml:"level"`
-	Output         string `yaml:"output"`
-	Split          bool   `yaml:"split"`
-	SplitDimension bool   `yaml:"splitDimension"`
-	Filepath       string `yaml:"filepath"`
-	FilePrefix     string `yaml:"filePrefix"`
-	FileSuffix     string `yaml:"fileSuffix"`
+	Enable     bool   `yaml:"enable"`
+	Level      string `yaml:"level"`
+	Output     string `yaml:"output"`
+	Split      bool   `yaml:"split"`
+	Filepath   string `yaml:"filePath"`
+	FilePrefix string `yaml:"filePrefix"`
+	FileSuffix string `yaml:"fileSuffix"`
 }
 
-func (c *LogConf) InitLog() (*util.Log, error) {
-	log := &util.Log{}
+func (c *LogConf) InitLog() (*logger.Log, error) {
+	log := &logger.Log{}
 
 	// init level
 	c.initLogLevel(log)
 
 	// int log output
-	if err := c.initLogOutput(log); err != nil {
+	c.initLogOutput(log)
+
+	// init log writer
+	if err := log.InitLogger(); err != nil {
 		return nil, err
 	}
 
 	return log, nil
 }
 
-func (c *LogConf) initLogLevel(log *util.Log)  {
+func (c *LogConf) initLogLevel(log *logger.Log) {
 	levels := strings.Split(c.Level, "|")
 	for _, level := range levels {
 		switch strings.ToUpper(level) {
@@ -50,43 +48,17 @@ func (c *LogConf) initLogLevel(log *util.Log)  {
 	}
 }
 
-func (c *LogConf) initLogOutput(log *util.Log)  error {
+func (c *LogConf) initLogOutput(log *logger.Log) {
 	outputs := strings.Split(c.Output, "|")
 	for _, output := range outputs {
 		switch strings.ToUpper(output) {
 		case "CONSOLE":
 			log.SetConsoleOut()
 		case "FILE":
-			if path, err := c.createLogPath(); err != nil {
-				return err
-			} else {
-				log.SetFileOut(path)
-			}
+			log.SetFileOut(c.Filepath)
+			log.SetFilePrefix(c.FilePrefix)
+			log.SetFileSuffix(c.FileSuffix)
+			log.SetFileSplit(c.Split)
 		}
 	}
-	return nil
-}
-
-func (c *LogConf) createLogPath() (string, error) {
-	var path string
-
-	if c.Filepath == "" {
-		path = UnixDefaultLogFilepath
-	} else {
-		path = c.Filepath
-	}
-
-	_, err := os.Stat(path)
-	if err == nil {
-		return path, nil
-	}
-
-	if os.IsNotExist(err) {
-		// create log path dir
-		if err = os.Mkdir(path, 0644); err != nil {
-			return path, err
-		}
-	}
-
-	return path ,err
 }

@@ -2,14 +2,16 @@ package conf
 
 import "go.etcd.io/etcd/clientv3"
 
-
 type EtcdConf struct {
+	cfg     *clientv3.Config
 	Cluster []string `yaml:"cluster"`
 }
 
-
-func (e *EtcdConf) CreateClientV3Config() clientv3.Config {
-	return clientv3.Config{
-		Endpoints: e.Cluster,
+func (e *EtcdConf) GetClientConfig() clientv3.Config {
+	if e.cfg == nil {
+		e.cfg = &clientv3.Config{
+			Endpoints: e.Cluster,
+		}
 	}
+	return *e.cfg
 }

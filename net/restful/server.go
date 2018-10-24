@@ -6,34 +6,41 @@ import (
 	"fmt"
 	"github.com/Waitfantasy/unicorn/conf"
 	"github.com/Waitfantasy/unicorn/id"
+	"github.com/Waitfantasy/unicorn/service/machine"
+	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
 )
 
 type Server struct {
 	c conf.Confer
+	e *gin.Engine
+	g *id.AtomicGenerator
 }
 
-func NewServer(c conf.Confer) *Server {
+func NewServer(c conf.Confer, generator *id.AtomicGenerator) *Server {
 	return &Server{
 		c: c,
+		g: generator,
 	}
 }
 
 func (s *Server) ListenAndServe() error {
 	httpConf := s.c.GetHttpConf()
-	idConf := s.c.GetIdConf()
-
-	handlers := handlers{
-		generator: id.NewAtomicGenerator(id.NewId(
-			idConf.MachineId,
-			idConf.IdType,
-			idConf.Version,
-			idConf.Epoch)),
+	// TODO
+	m, err := s.c.NewMachine("etcd")
+	if err != nil {
+		return err
 	}
 
-	handlers.register()
+	defer m.(*machine.EtcdMachine).Close()
 
+	api := api{
+		m: m,
+		g: s.g,
+	}
+
+	s.e = api.register()
 	if httpConf.EnableTLS {
 		if httpConf.ClientAuth {
 			data, err := ioutil.ReadFile(httpConf.CaFile)
@@ -48,7 +55,7 @@ func (s *Server) ListenAndServe() error {
 
 			server := &http.Server{
 				Addr:    httpConf.Addr,
-				Handler: nil,
+				Handler: s.e,
 				TLSConfig: &tls.Config{
 					ClientCAs:  pool,
 					ClientAuth: tls.RequireAndVerifyClientCert,
@@ -56,9 +63,17 @@ func (s *Server) ListenAndServe() error {
 			}
 			return server.ListenAndServeTLS(httpConf.CertFile, httpConf.KeyFile)
 		} else {
-			return http.ListenAndServeTLS(httpConf.Addr, httpConf.CertFile, httpConf.KeyFile, nil)
+			server := &http.Server{
+				Addr:    httpConf.Addr,
+				Handler: s.e,
+			}
+			return server.ListenAndServeTLS(httpConf.CertFile, httpConf.KeyFile)
 		}
 	} else {
-		return http.ListenAndServe(httpConf.Addr, nil)
+		server := &http.Server{
+			Addr:    httpConf.Addr,
+			Handler: s.e,
+		}
+		return server.ListenAndServe()
 	}
 }
