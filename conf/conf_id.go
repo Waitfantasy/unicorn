@@ -15,7 +15,27 @@ type IdConf struct {
 	Version       int    `yaml:"version"`
 }
 
-func (c *IdConf) ValidateMachineIp() error {
+func (c *IdConf) Init() error {
+	if err := c.validateMachineIp(); err != nil {
+		return err
+	}
+
+	if err := c.validateMachineIdType(); err != nil {
+		return err
+	}
+
+	if err := c.validateIdType(); err != nil {
+		return err
+	}
+
+	if err := c.validateVersion(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *IdConf) validateMachineIp() error {
 	if c.MachineIp == "" {
 		return errors.New("Please configure machine ip")
 	}
@@ -23,7 +43,7 @@ func (c *IdConf) ValidateMachineIp() error {
 	return nil
 }
 
-func (c *IdConf) ValidateMachineIdType() error{
+func (c *IdConf) validateMachineIdType() error {
 	switch c.MachineIdType {
 	case MachineIdLocalType:
 		return nil
@@ -35,7 +55,7 @@ func (c *IdConf) ValidateMachineIdType() error{
 	}
 }
 
-func (c *IdConf) ValidateIdType() error{
+func (c *IdConf) validateIdType() error {
 	switch c.IdType {
 	case id.SecondIdType:
 		return nil
@@ -47,7 +67,7 @@ func (c *IdConf) ValidateIdType() error{
 	}
 }
 
-func (c *IdConf) ValidateVersion() error{
+func (c *IdConf) validateVersion() error {
 	switch c.Version {
 	case UnavailableVersion:
 		return nil
@@ -59,6 +79,3 @@ func (c *IdConf) ValidateVersion() error{
 	}
 }
 
-func (c *IdConf) NewAtomicGenerator() *id.AtomicGenerator {
-	return id.NewAtomicGenerator(id.NewId(c.MachineId, c.IdType, c.Version, c.Epoch))
-}

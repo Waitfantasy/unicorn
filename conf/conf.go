@@ -1,21 +1,17 @@
 package conf
 
-import "github.com/Waitfantasy/unicorn/service/machine"
+import (
+	"github.com/Waitfantasy/unicorn/id"
+	"github.com/Waitfantasy/unicorn/util/logger"
+)
 
 type Confer interface {
-	Validate() error
-	InitMachineId() error
+	Init() error
 	GetIdConf() *IdConf
 	GetHttpConf() *HttpConf
 	GetEtcdConf() *EtcdConf
 	GetGRpcConf() *GRpcConf
 	GetLogConf() *LogConf
-	NewMachine(name string) (machine.Machiner, error)
-}
-
-type Factory struct {
-}
-
-func (f Factory) CreateYamlConf(filename string) (Confer, error) {
-	return InitYamlConf(filename)
+	GetGenerator() *id.AtomicGenerator
+	GetLogger() *logger.Log
 }

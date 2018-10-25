@@ -7,6 +7,7 @@ import (
 	"go.etcd.io/etcd/clientv3"
 	"io/ioutil"
 	"time"
+	"fmt"
 )
 
 const (
@@ -26,6 +27,14 @@ type EtcdConf struct {
 }
 
 func (e *EtcdConf) Init() error {
+	if err := e.validateEnableTls(); err != nil {
+		return err
+	}
+
+	if err := e.validateClientAuth(); err != nil {
+		return err
+	}
+
 	// init report
 	if e.Report == 0 {
 		e.Report = defaultReportSecond * int(time.Second)
@@ -40,6 +49,34 @@ func (e *EtcdConf) Init() error {
 		return err
 	} else if tlsCfg != nil {
 		e.cfg.TLS = tlsCfg
+	}
+
+	return nil
+}
+
+func (e * EtcdConf) validateEnableTls() error {
+	if e.EnableTls && !e.Insecure{
+		if e.CaFile == "" {
+			return fmt.Errorf("etcd client TLS is enabled, please configure ca file\n")
+		}
+	}
+
+	return nil
+}
+
+func (e *EtcdConf) validateClientAuth() error {
+	if e.ClientAuth {
+		if e.CaFile == "" {
+			return fmt.Errorf("etcd client enable client auth, please configure ca file\n")
+		}
+
+		if e.CertFile == "" {
+			return fmt.Errorf("etcd client enable client auth, please configure cert file\n")
+		}
+
+		if e.KeyFile == "" {
+			return fmt.Errorf("etcd client enable client auth, please configure key file\n")
+		}
 	}
 
 	return nil

@@ -9,7 +9,15 @@ type GRpcConf struct {
 	KeyFile   string `yaml:"keyFile"`
 }
 
-func (c *GRpcConf) ValidateEnableTLS() error {
+func (c *GRpcConf) Init()  error {
+	if err := c.validateEnableTLS(); err != nil {
+		return  err
+	}
+
+	return nil
+}
+
+func (c *GRpcConf) validateEnableTLS() error {
 	if c.EnableTLS {
 		if c.CertFile == "" {
 			return fmt.Errorf("TLS is enabled, please configure cert file\n")

@@ -4,93 +4,62 @@ import (
 	"context"
 	"flag"
 	"github.com/Waitfantasy/unicorn/conf"
-	"github.com/Waitfantasy/unicorn/id"
-	"github.com/Waitfantasy/unicorn/net/restful"
+		"github.com/Waitfantasy/unicorn/net/restful"
 	"github.com/Waitfantasy/unicorn/net/rpc"
 	"github.com/Waitfantasy/unicorn/service"
-	"github.com/Waitfantasy/unicorn/util/logger"
-	"go.etcd.io/etcd/clientv3"
-	"log"
-	"os"
-	"runtime"
-	"time"
+		"log"
+		"runtime"
 )
 
 var (
-	l        *logger.Log
 	c        conf.Confer
 	filename string
 )
 
-func initConf() (err error) {
-	factory := conf.Factory{}
-	if c, err = factory.CreateYamlConf(filename); err != nil {
-		return err
-	}
-
-	if err = c.Validate(); err != nil {
-		return err
-	}
-
-	if err = c.InitMachineId(); err != nil {
-		return err
-	}
-
-	if l, err = c.GetLogConf().InitLog(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func main() {
 	var (
-		ip        string
-		cfg       clientv3.Config
 		err       error
 		ctx       context.Context
-		generator *id.AtomicGenerator
 	)
 
 	flag.StringVar(&filename, "config", "/etc/unicorn/unicorn.yaml", "")
 	flag.Parse()
 
-	if err = initConf(); err != nil {
-		log.Fatal(err)
+	if c, err = conf.NewYamlConf(filename); err != nil {
+		log.Fatalf("conf.NewYamlConf(%s) error: %v\n", filename, err)
 	}
 
-	ip = c.GetIdConf().MachineIp
-	cfg = c.GetEtcdConf().GetClientConfig()
+	if err = c.Init(); err != nil {
+		log.Fatalf("c.Init() error: %v\n", err)
+	}
+
 	ctx, _ = context.WithCancel(context.Background())
-	generator = c.GetIdConf().NewAtomicGenerator()
 
 	// verify machine timestamp
-	etcdService := service.NewEtcdService(ip, cfg)
+	etcdService := service.NewEtcdService(c)
 	if err = etcdService.VerifyMachineTimestamp(); err != nil {
-		l.Println(logger.LDebug, err)
-		os.Exit(1)
+		log.Fatalf("etcdService.VerifyMachineTimestamp() error: %v\n", err)
 	}
 
 	// grp server
 	for i := 0; i < runtime.GOMAXPROCS(runtime.NumCPU()); i++ {
 		go func() {
-			rpc.NewTaskServer(c, generator).ListenAndServe()
+			rpc.NewTaskServer(c).ListenAndServe()
 		}()
 	}
 
 	// start report
 	go func() {
-		if etcdService.ReportMachineTimestamp(ctx, time.Second*3, l); err != nil {
-			l.Err("etcdService.ReportMachineTimestamp error: %v\n", err)
-			os.Exit(1)
+		if etcdService.ReportMachineTimestamp(ctx); err != nil {
+			log.Fatalf("etcdService.ReportMachineTimestamp() error: %v\n", err)
 		}
 	}()
 
 
 	// restful server
-	restfulServer := restful.NewServer(c, generator)
+	restfulServer := restful.NewServer(c)
 
 	if err = restfulServer.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("restfulServer.ListenAndServe() error: %v\n", err)
 	}
 }

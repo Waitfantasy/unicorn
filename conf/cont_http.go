@@ -11,7 +11,19 @@ type HttpConf struct {
 	ClientAuth bool   `yaml:"clientAuth"`
 }
 
-func (c *HttpConf) ValidateEnableTLS() error {
+func (c *HttpConf) Init() error{
+	if err := c.validateEnableTLS(); err != nil {
+		return err
+	}
+
+	if err := c.validateClientAuth(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *HttpConf) validateEnableTLS() error {
 	if c.EnableTLS {
 		if c.CertFile == "" {
 			return fmt.Errorf("TLS is enabled, please configure cert file\n")
@@ -25,7 +37,7 @@ func (c *HttpConf) ValidateEnableTLS() error {
 	return nil
 }
 
-func (c *HttpConf) ValidateClientAuth() error {
+func (c *HttpConf) validateClientAuth() error {
 	if c.ClientAuth {
 		if c.CaFile == "" {
 			return fmt.Errorf("TLS is enabled and client authentication is enabled, please configure ca file\n")

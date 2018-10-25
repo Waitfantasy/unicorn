@@ -6,61 +6,64 @@ import (
 	"github.com/Waitfantasy/unicorn/service/machine"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"github.com/Waitfantasy/unicorn/id"
+	"github.com/Waitfantasy/unicorn/util/logger"
 )
 
 type YamlConf struct {
-	Id     *IdConf   `yaml:"id"`
-	Http   *HttpConf `json:"http"`
-	Etcd   *EtcdConf `yaml:"etcd"`
-	GRpc   *GRpcConf `yaml:"grpc"`
-	Log    *LogConf  `yaml:"log"`
+	Id        *IdConf   `yaml:"id"`
+	Http      *HttpConf `json:"http"`
+	Etcd      *EtcdConf `yaml:"etcd"`
+	GRpc      *GRpcConf `yaml:"grpc"`
+	Log       *LogConf  `yaml:"log"`
+	generator *id.AtomicGenerator
 }
 
-func InitYamlConf(filename string) (*YamlConf, error) {
+func NewYamlConf(filename string) (*YamlConf, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
+
 	config := &YamlConf{}
 	if err = yaml.Unmarshal(b, config); err != nil {
 		return nil, err
 	}
+
 	return config, nil
 }
 
-func (c *YamlConf) Validate() error {
-	if err := c.Id.ValidateMachineIp(); err != nil {
+func (c *YamlConf) Init() error {
+	if err := c.Id.Init(); err != nil {
 		return err
 	}
 
-	if err := c.Id.ValidateMachineIdType(); err != nil {
+	if err := c.Log.Init(); err != nil {
 		return err
 	}
 
-	if err := c.Id.ValidateIdType(); err != nil {
+	if err := c.Etcd.Init(); err != nil {
 		return err
 	}
 
-	if err := c.Id.ValidateVersion(); err != nil {
+	if err := c.Http.Init(); err != nil {
 		return err
 	}
 
-	if err := c.Http.ValidateEnableTLS(); err != nil {
+	if err := c.GRpc.Init(); err != nil {
 		return err
 	}
 
-	if err := c.Http.ValidateClientAuth(); err != nil {
+	if err := c.initMachineId(); err != nil {
 		return err
 	}
 
-	if err := c.GRpc.ValidateEnableTLS(); err != nil {
-		return err
-	}
+	c.initGenerator()
 
 	return nil
 }
 
-func (c *YamlConf) InitMachineId() error {
+func (c *YamlConf) initMachineId() error {
 	var (
 		id  int
 		err error
@@ -88,6 +91,10 @@ func (c *YamlConf) InitMachineId() error {
 
 	c.Id.MachineId = id
 	return nil
+}
+
+func (c *YamlConf) initGenerator() {
+	c.generator = id.NewAtomicGenerator(id.NewId(c.Id.MachineId, c.Id.IdType, c.Id.Version, c.Id.Epoch))
 }
 
 func (c *YamlConf) fromLocalGetMachineId() (int, error) {
@@ -145,12 +152,10 @@ func (c *YamlConf) GetLogConf() *LogConf {
 	return c.Log
 }
 
-func (c *YamlConf) NewMachine(name string) (machine.Machiner, error) {
-	switch name {
-	case "etcd":
-		cfg := c.GetEtcdConf().GetClientConfig()
-		return machine.NewEtcdMachine(cfg)
-	default:
-		return nil, errors.New("no support machine service")
-	}
+func (c *YamlConf) GetGenerator() *id.AtomicGenerator{
+	return c.generator
+}
+
+func (c *YamlConf) GetLogger() *logger.Log  {
+	return c.Log.log
 }

@@ -18,26 +18,25 @@ type Server struct {
 	g *id.AtomicGenerator
 }
 
-func NewServer(c conf.Confer, generator *id.AtomicGenerator) *Server {
+func NewServer(c conf.Confer) *Server {
 	return &Server{
 		c: c,
-		g: generator,
 	}
 }
 
 func (s *Server) ListenAndServe() error {
 	httpConf := s.c.GetHttpConf()
 	// TODO
-	m, err := s.c.NewMachine("etcd")
+	m, err := machine.NewEtcdMachine(s.c.GetEtcdConf().GetClientConfig())
 	if err != nil {
 		return err
 	}
 
-	defer m.(*machine.EtcdMachine).Close()
+	defer m.Close()
 
 	api := api{
 		m: m,
-		g: s.g,
+		g: s.c.GetGenerator(),
 	}
 
 	s.e = api.register()

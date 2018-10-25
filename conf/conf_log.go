@@ -6,6 +6,7 @@ import (
 )
 
 type LogConf struct {
+	log        *logger.Log
 	Enable     bool   `yaml:"enable"`
 	Level      string `yaml:"level"`
 	Output     string `yaml:"output"`
@@ -15,14 +16,22 @@ type LogConf struct {
 	FileSuffix string `yaml:"fileSuffix"`
 }
 
+func (c *LogConf) Init() error {
+	c.log = &logger.Log{}
+	c.setLogLevel()
+	c.setLogOutput()
+	if err := c.log.InitLogger(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *LogConf) GetLogger() *logger.Log {
+	return c.log
+}
+
 func (c *LogConf) InitLog() (*logger.Log, error) {
 	log := &logger.Log{}
-
-	// init level
-	c.initLogLevel(log)
-
-	// int log output
-	c.initLogOutput(log)
 
 	// init log writer
 	if err := log.InitLogger(); err != nil {
@@ -32,33 +41,33 @@ func (c *LogConf) InitLog() (*logger.Log, error) {
 	return log, nil
 }
 
-func (c *LogConf) initLogLevel(log *logger.Log) {
+func (c *LogConf) setLogLevel() {
 	levels := strings.Split(c.Level, "|")
 	for _, level := range levels {
 		switch strings.ToUpper(level) {
 		case "DEBUG":
-			log.SetDebugLevel()
+			c.log.SetDebugLevel()
 		case "INFO":
-			log.SetInfoLevel()
+			c.log.SetInfoLevel()
 		case "WARN":
-			log.SetWarnLevel()
+			c.log.SetWarnLevel()
 		case "ERR":
-			log.SetErrLevel()
+			c.log.SetErrLevel()
 		}
 	}
 }
 
-func (c *LogConf) initLogOutput(log *logger.Log) {
+func (c *LogConf) setLogOutput() {
 	outputs := strings.Split(c.Output, "|")
 	for _, output := range outputs {
 		switch strings.ToUpper(output) {
 		case "CONSOLE":
-			log.SetConsoleOut()
+			c.log.SetConsoleOut()
 		case "FILE":
-			log.SetFileOut(c.Filepath)
-			log.SetFilePrefix(c.FilePrefix)
-			log.SetFileSuffix(c.FileSuffix)
-			log.SetFileSplit(c.Split)
+			c.log.SetFileOut(c.Filepath)
+			c.log.SetFilePrefix(c.FilePrefix)
+			c.log.SetFileSuffix(c.FileSuffix)
+			c.log.SetFileSplit(c.Split)
 		}
 	}
 }

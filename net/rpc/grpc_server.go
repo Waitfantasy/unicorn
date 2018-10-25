@@ -3,7 +3,6 @@ package rpc
 import (
 	"context"
 	"github.com/Waitfantasy/unicorn/conf"
-	"github.com/Waitfantasy/unicorn/id"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"net"
@@ -11,19 +10,18 @@ import (
 
 type TaskServer struct {
 	c conf.Confer
-	g *id.AtomicGenerator
 }
 
-func NewTaskServer(c conf.Confer, generator *id.AtomicGenerator) *TaskServer {
+func NewTaskServer(c conf.Confer) *TaskServer {
 	return &TaskServer{
 		c: c,
-		g: generator,
 	}
 }
 
 func (s *TaskServer) GetUUID(ctx context.Context, void *Void) (*ResponseUUID, error) {
+	g := s.c.GetGenerator()
 	res := &ResponseUUID{}
-	uuid, err := s.g.Make()
+	uuid, err := g.Make()
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +31,8 @@ func (s *TaskServer) GetUUID(ctx context.Context, void *Void) (*ResponseUUID, er
 }
 
 func (s *TaskServer) Extract(ctx context.Context, extract *RequestExtract) (*ResponseExtract, error) {
-	data := s.g.Extract(extract.Uuid)
+	g := s.c.GetGenerator()
+	data := g.Extract(extract.Uuid)
 	return &ResponseExtract{
 		MachineId: int64(data.MachineId),
 		Sequence:  data.Sequence,
