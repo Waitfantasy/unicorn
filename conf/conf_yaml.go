@@ -9,11 +9,11 @@ import (
 )
 
 type YamlConf struct {
-	Id   *IdConf   `yaml:"id"`
-	Http *HttpConf `json:"http"`
-	Etcd *EtcdConf `yaml:"etcd"`
-	GRpc *GRpcConf `yaml:"grpc"`
-	Log  *LogConf  `yaml:"log"`
+	Id     *IdConf   `yaml:"id"`
+	Http   *HttpConf `json:"http"`
+	Etcd   *EtcdConf `yaml:"etcd"`
+	GRpc   *GRpcConf `yaml:"grpc"`
+	Log    *LogConf  `yaml:"log"`
 }
 
 func InitYamlConf(filename string) (*YamlConf, error) {
@@ -141,11 +141,11 @@ func (c *YamlConf) GetGRpcConf() *GRpcConf {
 	return c.GRpc
 }
 
-func (c *YamlConf) GetLogConf() *LogConf  {
+func (c *YamlConf) GetLogConf() *LogConf {
 	return c.Log
 }
 
-func (c *YamlConf) NewMachine(name string) (machine.Machiner, error){
+func (c *YamlConf) NewMachine(name string) (machine.Machiner, error) {
 	switch name {
 	case "etcd":
 		cfg := c.GetEtcdConf().GetClientConfig()

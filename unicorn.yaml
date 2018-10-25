@@ -2,6 +2,12 @@ etcd:
   cluster:
   - "192.168.10.10:2379"
   - "192.168.10.11:2379"
+  enableTls: false
+  caFile: ""
+  clientAuth: false
+  certFile: ""
+  keyFile: ""
+  report: 60
 
 id:
   epoch: 1539660973223
@@ -40,3 +46,6 @@ log:
 
   # default: .log
   fileSuffix: ""
+
+report: 60
+

@@ -50,7 +50,6 @@ func main() {
 		err       error
 		ctx       context.Context
 		generator *id.AtomicGenerator
-		//cancel context.CancelFunc
 	)
 
 	flag.StringVar(&filename, "config", "/etc/unicorn/unicorn.yaml", "")
