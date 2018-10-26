@@ -1,32 +1,52 @@
 etcd:
+  # etcd connection cluster
   cluster:
   - "192.168.10.10:2379"
   - "192.168.10.11:2379"
+
   enableTls: false
-  caFile: ""
+
   clientAuth: false
+
+  # if enable client auth, configure it
+  caFile: ""
+
+  # if enable tls, configure it
   certFile: ""
+
+  # if enable tls, configure it
   keyFile: ""
+
+  # report timestamp to etcd second
   report: 60
-  # etcd timeout second
-  timeout: 1
+
+  # etcd connection timeout second
+  timeout: 5
 
 id:
   epoch: 1539660973223
+
   machineId: 1
+
   machineIp: "127.0.0.1"
+
+  # 0: use local 1: use etcd
   machineIdType: 1
+
+  # 0: use second 1: use million second
   idType: 1
+
+  # optional: 0 or 1
   version: 1
 
 http:
-  addr: "192.168.10.10:9001"
+  addr: ":9001"
   enableTls: false
-  certFile: "./server.pem"
-  keyFile: "./server-key.pem"
+  certFile: ""
+  keyFile: ""
 
 grpc:
-  addr: "127.0.0.1:9002"
+  addr: ":9002"
   enableTls: false
   certFile: ""
   serverName: ""
@@ -52,6 +72,3 @@ log:
 
   # default: .log
   fileSuffix: ""
-
-report: 60
-
