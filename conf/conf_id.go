@@ -37,7 +37,7 @@ func (c *IdConf) Init() error {
 
 func (c *IdConf) validateMachineIp() error {
 	if c.MachineIp == "" {
-		return errors.New("Please configure machine ip")
+		return errors.New("please configure machine ip")
 	}
 	// TODO regexp validate
 	return nil

@@ -7,15 +7,17 @@ import (
 	"go.etcd.io/etcd/clientv3"
 	"hash/crc32"
 	"strconv"
+	"time"
 )
 
 type EtcdMachine struct {
 	prefixKey string
 	slotsKey  string
+	timeout   int
 	cli       *clientv3.Client
 }
 
-func NewEtcdMachine(cfg clientv3.Config) (*EtcdMachine, error) {
+func NewEtcdMachine(cfg clientv3.Config, timeout int) (*EtcdMachine, error) {
 	clientv3.New(cfg)
 	if cli, err := clientv3.New(cfg); err != nil {
 		return nil, err
@@ -23,7 +25,8 @@ func NewEtcdMachine(cfg clientv3.Config) (*EtcdMachine, error) {
 		return &EtcdMachine{
 			prefixKey: "/unicorn_machine_items/",
 			slotsKey:  "unicorn_machine_slots",
-			cli:cli,
+			timeout:   timeout,
+			cli:       cli,
 		}, nil
 	}
 }
@@ -33,7 +36,8 @@ func (e *EtcdMachine) Close() error {
 }
 
 func (e *EtcdMachine) getSlots() (*slots, error) {
-	res, err := e.cli.Get(context.Background(), e.slotsKey)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	res, err := e.cli.Get(ctx, e.slotsKey)
 	if err != nil {
 		return nil, err
 	}
@@ -53,13 +57,17 @@ func (e *EtcdMachine) putSlots(s *slots) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.cli.Put(context.Background(), e.slotsKey, string(b))
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	_, err = e.cli.Put(ctx, e.slotsKey, string(b))
 	return err
 }
 
 func (e *EtcdMachine) All() ([]*Item, error) {
 	items := make([]*Item, 0)
-	res, err := e.cli.Get(context.Background(), e.prefixKey, clientv3.WithPrefix())
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	res, err := e.cli.Get(ctx, e.prefixKey, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +88,8 @@ func (e *EtcdMachine) Get(ip string) (*Item, error) {
 }
 
 func (e *EtcdMachine) get(key string) (*Item, error) {
-	res, err := e.cli.Get(context.Background(), key)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	res, err := e.cli.Get(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +150,8 @@ func (e *EtcdMachine) PutItem(item *Item) error {
 		return err
 	}
 
-	_, err = e.cli.Put(context.Background(), item.Key, string(b))
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	_, err = e.cli.Put(ctx, item.Key, string(b))
 	return err
 }
 
@@ -167,7 +177,8 @@ func (e *EtcdMachine) Del(ip string) (*Item, error) {
 		return nil, err
 	}
 
-	if _, err = e.cli.Delete(context.Background(), key); err != nil {
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	if _, err = e.cli.Delete(ctx, key); err != nil {
 		return nil, err
 	}
 
@@ -199,7 +210,8 @@ func (e *EtcdMachine) Reset(oldIp, newIp string) error {
 	}
 
 	// delete old machine by old key
-	if _, err = e.cli.Delete(context.Background(), oldKey); err != nil {
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	if _, err = e.cli.Delete(ctx, oldKey); err != nil {
 		return err
 	}
 

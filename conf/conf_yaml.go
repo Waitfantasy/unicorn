@@ -74,13 +74,13 @@ func (c *YamlConf) initMachineId() error {
 	case MachineIdEtcdType:
 		item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp)
 		if err != nil {
-			return err
+			return fmt.Errorf("c.fromEtcdGetMachineItem(%s) error: %v\n", c.Id.MachineIp, err)
 		}
 		id = item.Id
 	default:
 		item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp)
 		if err != nil {
-			return err
+			return fmt.Errorf("c.fromEtcdGetMachineItem(%s) error: %v\n", c.Id.MachineIp, err)
 		}
 		id = item.Id
 	}
@@ -106,7 +106,7 @@ func (c *YamlConf) fromLocalGetMachineId() (int, error) {
 
 func (c *YamlConf) fromEtcdGetMachineItem(ip string) (*machine.Item, error) {
 	// create machineService
-	machineService, err := machine.NewEtcdMachine(c.Etcd.GetClientConfig())
+	machineService, err := machine.NewEtcdMachine(c.Etcd.GetClientConfig(), c.Etcd.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,6 @@ func (c *YamlConf) fromEtcdGetMachineItem(ip string) (*machine.Item, error) {
 	}
 
 	if item != nil {
-		fmt.Println("get item: ", item)
 		return item, nil
 	}
 
@@ -127,7 +126,6 @@ func (c *YamlConf) fromEtcdGetMachineItem(ip string) (*machine.Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("put item: ", item)
 
 	return item, nil
 }

@@ -8,6 +8,8 @@ etcd:
   certFile: ""
   keyFile: ""
   report: 60
+  # etcd timeout second
+  timeout: 1
 
 id:
   epoch: 1539660973223
@@ -18,28 +20,32 @@ id:
   version: 1
 
 http:
-  addr: "127.0.0.1:9001"
+  addr: "192.168.10.10:9001"
   enableTls: false
   certFile: "./server.pem"
   keyFile: "./server-key.pem"
 
 grpc:
   addr: "127.0.0.1:9002"
+  enableTls: false
+  certFile: ""
+  serverName: ""
+  insecure: false
 
 log:
   enable: true
 
   # default: error
-  level: "debug|warning|error"
+  level: "info|warning|error"
 
   # console|file|network
-  output:  "console"
+  output:  "console|file"
 
   # default: false
   split: false
 
   # default: /var/run/log/unicorn
-  filepath: ""
+  filePath: ""
 
   # default: unicorn
   filePrefix: ""

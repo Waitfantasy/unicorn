@@ -3,3 +3,4 @@
 vendor
 server.pem
 server-key.pem
+bin/

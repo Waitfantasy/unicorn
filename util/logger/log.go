@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"os"
@@ -23,7 +24,7 @@ const (
 const (
 	DefaultLogFilePrefix   = "unicorn"
 	DefaultLogFileSuffix   = "log"
-	UnixDefaultLogFilePath = "/var/run/log/unicorn"
+	UnixDefaultLogFilePath = "/var/log/unicorn"
 )
 
 type Log struct {
@@ -210,29 +211,46 @@ func (l *Log) Printf(level Level, format string, v ...interface{}) {
 	l.printf(level, format, v...)
 }
 
-func (l *Log) printf(level Level, format string, v ...interface{}) {
-	prefix := l.getPrefix(level)
-	if l.consoleLogger != nil {
-		l.consoleLogger.SetPrefix(prefix)
-		l.consoleLogger.Printf(format, v...)
+func (l *Log) GinMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		end := time.Now()
+		latency := end.Sub(start)
+		l.Info("| %3d | %9v | %10s | %s  %s |",
+			c.Writer.Status(),
+			latency,
+			c.ClientIP(),
+			c.Request.Method,
+			c.Request.URL.Path)
 	}
+}
 
-	if l.fileLogger != nil {
-		l.fileLogger.SetPrefix(prefix)
-		l.fileLogger.Printf(format, v...)
+func (l *Log) printf(level Level, format string, v ...interface{}) {
+	if prefix := l.getPrefix(level); prefix != "" {
+		if l.consoleLogger != nil {
+			l.consoleLogger.SetPrefix(prefix)
+			l.consoleLogger.Printf(format, v...)
+		}
+
+		if l.fileLogger != nil {
+			l.fileLogger.SetPrefix(prefix)
+			l.fileLogger.Printf(format, v...)
+		}
 	}
 }
 
 func (l *Log) println(level Level, v ...interface{}) {
-	prefix := l.getPrefix(level)
-	if l.consoleLogger != nil {
-		l.consoleLogger.SetPrefix(prefix)
-		l.consoleLogger.Println(v...)
-	}
+	if prefix := l.getPrefix(level); prefix != "" {
+		if l.consoleLogger != nil {
+			l.consoleLogger.SetPrefix(prefix)
+			l.consoleLogger.Println(v...)
+		}
 
-	if l.fileLogger != nil {
-		l.fileLogger.SetPrefix(prefix)
-		l.fileLogger.Println(v...)
+		if l.fileLogger != nil {
+			l.fileLogger.SetPrefix(prefix)
+			l.fileLogger.Println(v...)
+		}
 	}
 }
 
@@ -240,13 +258,21 @@ func (l *Log) getPrefix(level Level) string {
 	var prefix string
 	switch level {
 	case LDebug:
-		prefix = LDebugPrefix
+		if l.debug {
+			prefix = LDebugPrefix
+		}
 	case LInfo:
-		prefix = LInfoPrefix
+		if l.info {
+			prefix = LInfoPrefix
+		}
 	case LWarn:
-		prefix = LWarnPrefix
+		if l.warn {
+			prefix = LWarnPrefix
+		}
 	case LErr:
-		prefix = LErrPrefix
+		if l.err {
+			prefix = LErrPrefix
+		}
 	}
 
 	return prefix

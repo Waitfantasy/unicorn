@@ -4,11 +4,11 @@ import (
 	"context"
 	"flag"
 	"github.com/Waitfantasy/unicorn/conf"
-		"github.com/Waitfantasy/unicorn/net/restful"
+	"github.com/Waitfantasy/unicorn/net/restful"
 	"github.com/Waitfantasy/unicorn/net/rpc"
 	"github.com/Waitfantasy/unicorn/service"
-		"log"
-		"runtime"
+	"log"
+	"runtime"
 )
 
 var (
@@ -30,7 +30,7 @@ func main() {
 	}
 
 	if err = c.Init(); err != nil {
-		log.Fatalf("c.Init() error: %v\n", err)
+		log.Fatal(err)
 	}
 
 	ctx, _ = context.WithCancel(context.Background())
@@ -54,7 +54,6 @@ func main() {
 			log.Fatalf("etcdService.ReportMachineTimestamp() error: %v\n", err)
 		}
 	}()
-
 
 	// restful server
 	restfulServer := restful.NewServer(c)

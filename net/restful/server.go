@@ -27,7 +27,7 @@ func NewServer(c conf.Confer) *Server {
 func (s *Server) ListenAndServe() error {
 	httpConf := s.c.GetHttpConf()
 	// TODO
-	m, err := machine.NewEtcdMachine(s.c.GetEtcdConf().GetClientConfig())
+	m, err := machine.NewEtcdMachine(s.c.GetEtcdConf().GetClientConfig(), s.c.GetEtcdConf().Timeout)
 	if err != nil {
 		return err
 	}
@@ -35,6 +35,7 @@ func (s *Server) ListenAndServe() error {
 	defer m.Close()
 
 	api := api{
+		l: s.c.GetLogger(),
 		m: m,
 		g: s.c.GetGenerator(),
 	}

@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/Waitfantasy/unicorn/service/machine"
-			"time"
 	"github.com/Waitfantasy/unicorn/conf"
+	"github.com/Waitfantasy/unicorn/service/machine"
+	"time"
 )
 
 const maxEndureMs = 5
@@ -21,7 +21,7 @@ func NewEtcdService(c conf.Confer) *Etcd {
 }
 
 func (e *Etcd) VerifyMachineTimestamp() error {
-	machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig())
+	machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig(), e.c.GetEtcdConf().Timeout)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 		done bool
 	)
 
-	machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig())
+	machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig(), e.c.GetEtcdConf().Timeout)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 
 	ip := e.c.GetIdConf().MachineIp
 	l := e.c.GetLogger()
-	second := time.Duration(e.c.GetEtcdConf().Report)
+	second := time.Duration(e.c.GetEtcdConf().Report) * time.Second
 	t := time.NewTimer(second)
 	for {
 		select {

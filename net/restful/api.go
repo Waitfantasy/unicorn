@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Waitfantasy/unicorn/id"
 	"github.com/Waitfantasy/unicorn/service/machine"
+	"github.com/Waitfantasy/unicorn/util/logger"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -13,10 +14,12 @@ import (
 type api struct {
 	g *id.AtomicGenerator
 	m machine.Machiner
+	l *logger.Log
 }
 
 func (a *api) register() *gin.Engine {
 	e := gin.Default()
+	e.Use(a.l.GinMiddleware())
 	// uuid api group
 	g1 := e.Group("/api/v1/uuid")
 	g1.GET("/make", a.uuidMake())
@@ -111,7 +114,7 @@ func (a *api) machineList() gin.HandlerFunc {
 	}
 }
 
-func (a *api) machineStore() gin.HandlerFunc  {
+func (a *api) machineStore() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip, err := validatorIp(c)
 		if err != nil {

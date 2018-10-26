@@ -14,14 +14,14 @@ func newEtcdMachine() *EtcdMachine {
 		Endpoints: []string{
 			"192.168.10.10:2379",
 		},
-	})
+	}, 5)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return e
 }
 
-func Test_init(t *testing.T)  {
+func Test_init(t *testing.T) {
 	e := newEtcdMachine()
 
 	defer func() {
@@ -69,7 +69,7 @@ func TestEtcdMachine_Put(t *testing.T) {
 		return
 	}
 
-	for i:= 2; i < maxFreeSlots; i++ {
+	for i := 2; i < maxFreeSlots; i++ {
 		if slots.Free[i] != 0 {
 			t.Errorf("the Free slots calculate error")
 			return
@@ -183,7 +183,7 @@ func TestEtcdMachine_All(t *testing.T) {
 		}
 	}()
 
-	for i:= 1; i < maxFreeSlots; i++ {
+	for i := 1; i < maxFreeSlots; i++ {
 		ip := "10.10.10." + strconv.Itoa(i)
 		item, err := e.Put(ip)
 		if err != nil {
@@ -207,7 +207,7 @@ func TestEtcdMachine_All(t *testing.T) {
 		return
 	}
 
-	if slots.Use != maxFreeSlots - 1 {
+	if slots.Use != maxFreeSlots-1 {
 		t.Error("slots use calculate error")
 		return
 	}
@@ -217,8 +217,7 @@ func TestEtcdMachine_All(t *testing.T) {
 		return
 	}
 
-
-	for i:= 1; i < maxFreeSlots; i++ {
+	for i := 1; i < maxFreeSlots; i++ {
 		ip := "10.10.10." + strconv.Itoa(i)
 		item, err := e.Del(ip)
 		if err != nil {

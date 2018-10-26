@@ -4,14 +4,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"go.etcd.io/etcd/clientv3"
 	"io/ioutil"
-	"time"
-	"fmt"
 )
 
 const (
 	defaultReportSecond = 30
+	defaultTimeoutSecond = 5
 )
 
 type EtcdConf struct {
@@ -23,6 +23,7 @@ type EtcdConf struct {
 	CertFile   string   `yaml:"certFile"`
 	KeyFile    string   `yaml:"keyFile"`
 	Report     int      `yaml:"report"`
+	Timeout    int      `yaml:"timeout"`
 	Cluster    []string `yaml:"cluster"`
 }
 
@@ -37,7 +38,12 @@ func (e *EtcdConf) Init() error {
 
 	// init report
 	if e.Report == 0 {
-		e.Report = defaultReportSecond * int(time.Second)
+		e.Report = defaultReportSecond
+	}
+
+	// init timeout
+	if e.Timeout == 0 {
+		e.Timeout = defaultTimeoutSecond
 	}
 
 	// init etcd v3 client
@@ -54,8 +60,8 @@ func (e *EtcdConf) Init() error {
 	return nil
 }
 
-func (e * EtcdConf) validateEnableTls() error {
-	if e.EnableTls && !e.Insecure{
+func (e *EtcdConf) validateEnableTls() error {
+	if e.EnableTls && !e.Insecure {
 		if e.CaFile == "" {
 			return fmt.Errorf("etcd client TLS is enabled, please configure ca file\n")
 		}
