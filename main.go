@@ -36,7 +36,11 @@ func main() {
 	ctx, _ = context.WithCancel(context.Background())
 
 	// verify machine timestamp
-	etcdService := service.NewEtcdService(c)
+	etcdService, err := service.NewEtcdService(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if err = etcdService.VerifyMachineTimestamp(); err != nil {
 		log.Fatalf("etcdService.VerifyMachineTimestamp() error: %v\n", err)
 	}

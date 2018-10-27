@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/Waitfantasy/unicorn/conf"
 	"github.com/Waitfantasy/unicorn/service/machine"
+	"math"
 	"time"
 )
 
@@ -12,23 +13,22 @@ const maxEndureMs = 5
 
 type Etcd struct {
 	c conf.Confer
+	m *machine.EtcdMachine
 }
 
-func NewEtcdService(c conf.Confer) *Etcd {
-	return &Etcd{
-		c: c,
+func NewEtcdService(c conf.Confer) (*Etcd, error) {
+	if m, err := machine.NewEtcdMachine(c.GetEtcdConf().GetClientConfig(), c.GetEtcdConf().Timeout); err != nil {
+		return nil, err
+	} else {
+		return &Etcd{
+			m: m,
+			c: c,
+		}, nil
 	}
 }
 
 func (e *Etcd) VerifyMachineTimestamp() error {
-	machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig(), e.c.GetEtcdConf().Timeout)
-	if err != nil {
-		return err
-	}
-
-	defer machineService.Close()
-
-	item, err := machineService.Get(e.c.GetIdConf().MachineIp)
+	item, err := e.m.Get(e.c.GetIdConf().MachineIp)
 	if err != nil {
 		return err
 	}
@@ -46,18 +46,21 @@ func (e *Etcd) VerifyMachineTimestamp() error {
 
 func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 	var (
-		done bool
+		retry    bool = true
+		retries  int = 1
+		maxRetry int = 5
+		done     bool
 	)
 
-	machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig(), e.c.GetEtcdConf().Timeout)
-	if err != nil {
-		return err
-	}
+	//machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig(), e.c.GetEtcdConf().Timeout)
+	//if err != nil {
+	//	return err
+	//}
 
-	defer machineService.Close()
+	//defer machineService.Close()
 
-	ip := e.c.GetIdConf().MachineIp
-	l := e.c.GetLogger()
+	//ip := e.c.GetIdConf().MachineIp
+	//l := e.c.GetLogger()
 	second := time.Duration(e.c.GetEtcdConf().Report) * time.Second
 	t := time.NewTimer(second)
 	for {
@@ -66,27 +69,52 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 			done = true
 			break
 		case <-t.C:
-			if item, err := machineService.Get(ip); err != nil {
-				l.Err("use %s get machine error: %v\n", ip, err)
-				t.Reset(second)
-				break
-			} else {
-				item.LastTimestamp = machine.Timestamp()
-				if err = machineService.PutItem(item); err != nil {
-					l.Err("update (ip: %s) machine (last_timestamp: %d) error: %v\n",
-						ip, item.LastTimestamp, err)
-					t.Reset(second)
-					break
-				}
-				l.Debug("update (ip: %s) machine (last_timestamp: %d) success\n", ip, item.LastTimestamp)
-				t.Reset(second)
+			// retry
+
+			if err := e.report(); err != nil {
+
+				retry = true
 			}
+
+
+
+
+			//if item, err := machineService.Get(ip); err != nil {
+			//	l.Err("use %s get machine error: %v\n", ip, err)
+			//	t.Reset(second)
+			//	break
+			//} else {
+			//	item.LastTimestamp = machine.Timestamp()
+			//	if err = machineService.PutItem(item); err != nil {
+			//		l.Err("update (ip: %s) machine (last_timestamp: %d) error: %v\n",
+			//			ip, item.LastTimestamp, err)
+			//		t.Reset(second)
+			//		break
+			//	}
+			//	l.Debug("update (ip: %s) machine (last_timestamp: %d) success\n", ip, item.LastTimestamp)
+			//	t.Reset(second)
+			//}
 		default:
 		}
 
 		if done {
 			break
 		}
+	}
+
+	return nil
+}
+
+func (e *Etcd) report() error {
+	ip := e.c.GetIdConf().MachineIp
+	item, err := e.m.Get(ip)
+	if err != nil {
+		return err
+	}
+
+	item.LastTimestamp = machine.Timestamp()
+	if err = e.m.PutItem(item); err != nil {
+		return err
 	}
 
 	return nil

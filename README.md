@@ -34,7 +34,7 @@ make alpine
 
 docker build -t unicorn:latest ./
 
-docker run -d -p 9001:9001 -p 9002:9002 unicorn
+docker run -d -p 9001:9001 -p 9002:9002 -v /path/unicorn.yaml:/etc/unicorn/unicorn.yaml unicorn
 
 
 # config file
