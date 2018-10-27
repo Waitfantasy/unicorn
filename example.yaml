@@ -18,7 +18,7 @@ etcd:
   keyFile: ""
 
   # report timestamp to etcd second
-  report: 60
+  report: 3
 
   # etcd connection timeout second
   timeout: 5
@@ -56,7 +56,7 @@ log:
   enable: true
 
   # default: error
-  level: "info|warning|error"
+  level: "info|warning|error|debug"
 
   # console|file|network
   output:  "console|file"
@@ -65,7 +65,7 @@ log:
   split: false
 
   # default: /var/run/log/unicorn
-  filePath: ""
+  filePath: "./"
 
   # default: unicorn
   filePrefix: ""

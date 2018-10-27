@@ -12,8 +12,9 @@ import (
 const maxEndureMs = 5
 
 type Etcd struct {
-	c conf.Confer
-	m *machine.EtcdMachine
+	c                   conf.Confer
+	m                   *machine.EtcdMachine
+	reconnectResultChan chan bool
 }
 
 func NewEtcdService(c conf.Confer) (*Etcd, error) {
@@ -21,8 +22,9 @@ func NewEtcdService(c conf.Confer) (*Etcd, error) {
 		return nil, err
 	} else {
 		return &Etcd{
-			m: m,
-			c: c,
+			c:                   c,
+			m:                   m,
+			reconnectResultChan: make(chan bool),
 		}, nil
 	}
 }
@@ -46,55 +48,67 @@ func (e *Etcd) VerifyMachineTimestamp() error {
 
 func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 	var (
-		retry    bool = true
-		retries  int = 1
-		maxRetry int = 5
-		done     bool
+		local         = false
+		etcd          = true
+		retry         = true
+		retries       = 0
+		maxRetry      = 5
+		maxWaitSecond = 10
+		done          bool
 	)
 
-	//machineService, err := machine.NewEtcdMachine(e.c.GetEtcdConf().GetClientConfig(), e.c.GetEtcdConf().Timeout)
-	//if err != nil {
-	//	return err
-	//}
-
-	//defer machineService.Close()
-
-	//ip := e.c.GetIdConf().MachineIp
-	//l := e.c.GetLogger()
 	second := time.Duration(e.c.GetEtcdConf().Report) * time.Second
 	t := time.NewTimer(second)
+	l := e.c.GetLogger()
 	for {
 		select {
 		case <-ctx.Done():
 			done = true
 			break
 		case <-t.C:
-			// retry
-
-			if err := e.report(); err != nil {
-
-				retry = true
+			// put to local
+			if local {
+				select {
+				case <-e.reconnectResultChan:
+					l.Debug("reconnect etcd success, start report timestamp to etcd\n")
+					etcd = true
+					local = false
+					retry = false
+					retries = 0
+					t.Reset(second)
+					break
+				default:
+					// TODO local storage
+					l.Debug("put timestamp tp local\n")
+					t.Reset(second)
+					break
+				}
 			}
 
-
-
-
-			//if item, err := machineService.Get(ip); err != nil {
-			//	l.Err("use %s get machine error: %v\n", ip, err)
-			//	t.Reset(second)
-			//	break
-			//} else {
-			//	item.LastTimestamp = machine.Timestamp()
-			//	if err = machineService.PutItem(item); err != nil {
-			//		l.Err("update (ip: %s) machine (last_timestamp: %d) error: %v\n",
-			//			ip, item.LastTimestamp, err)
-			//		t.Reset(second)
-			//		break
-			//	}
-			//	l.Debug("update (ip: %s) machine (last_timestamp: %d) success\n", ip, item.LastTimestamp)
-			//	t.Reset(second)
-			//}
-		default:
+			// put to etcd
+			if etcd {
+				if err := e.report(); err != nil {
+					retry = true
+					retries++
+					if retry && retries < maxRetry {
+						d := time.Duration(math.Min(math.Pow(2, float64(retries)), float64(maxWaitSecond)))
+						l.Debug("report etcd error, retry: %d, wait second: %d\n", retries, d)
+						time.Sleep(d)
+						t.Reset(second)
+						break
+					} else {
+						l.Debug("max retry, use local put\n")
+						local = true
+						etcd = false
+						go e.reconnect()
+						t.Reset(second)
+						break
+					}
+				} else {
+					t.Reset(second)
+					break
+				}
+			}
 		}
 
 		if done {
@@ -103,6 +117,33 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (e *Etcd) reconnect() {
+	l := e.c.GetLogger()
+	l.Debug("start reconnect etcd goroutine\n")
+	done := false
+	// TODO reconnect time use configure
+	t := time.NewTimer(time.Second * 3)
+	for {
+		select {
+		case <-t.C:
+			l.Debug("[reconnect goroutine]: reconnect etcd\n")
+			if err := e.report(); err == nil {
+				done = true
+				break
+			} else {
+				t.Reset(time.Second * 3)
+				break
+			}
+		}
+		if done {
+			e.reconnectResultChan <- true
+			t.Stop()
+			l.Debug("[reconnect goroutine]: reconnect etcd success\n")
+			break
+		}
+	}
 }
 
 func (e *Etcd) report() error {
