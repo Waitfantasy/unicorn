@@ -51,7 +51,7 @@ func (c *LogConf) setLogLevel() {
 			c.log.SetInfoLevel()
 		case "WARN":
 			c.log.SetWarnLevel()
-		case "ERR":
+		case "ERROR":
 			c.log.SetErrLevel()
 		}
 	}

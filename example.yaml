@@ -23,6 +23,14 @@ etcd:
   # etcd connection timeout second
   timeout: 5
 
+  # local report file. default: /tmp/unicorn-report.gob
+  reportFile: "unicorn-report.bin"
+
+  # local report second. default: 90
+  localReport: 60
+
+
+
 id:
   epoch: 1539660973223
 
@@ -31,7 +39,7 @@ id:
   machineIp: "127.0.0.1"
 
   # 0: use local 1: use etcd
-  machineIdType: 1
+  machineIdType: 0
 
   # 0: use second 1: use million second
   idType: 1

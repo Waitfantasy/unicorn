@@ -41,6 +41,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	defer etcdService.Close()
+
 	if err = etcdService.VerifyMachineTimestamp(); err != nil {
 		log.Fatalf("etcdService.VerifyMachineTimestamp() error: %v\n", err)
 	}

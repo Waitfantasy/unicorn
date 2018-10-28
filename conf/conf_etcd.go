@@ -10,21 +10,25 @@ import (
 )
 
 const (
-	defaultReportSecond = 30
-	defaultTimeoutSecond = 5
+	defaultReportSecond      = 30
+	defaultTimeoutSecond     = 5
+	defaultLocalReportSecond = 90
+	defaultReportFile        = "/tmp/unicorn-report.bin"
 )
 
 type EtcdConf struct {
-	cfg        *clientv3.Config
-	EnableTls  bool     `yaml:"enableTls"`
-	Insecure   bool     `yaml:"insecure"`
-	CaFile     string   `yaml:"caFile"`
-	ClientAuth bool     `yaml:"clientAuth"`
-	CertFile   string   `yaml:"certFile"`
-	KeyFile    string   `yaml:"keyFile"`
-	Report     int      `yaml:"report"`
-	Timeout    int      `yaml:"timeout"`
-	Cluster    []string `yaml:"cluster"`
+	cfg         *clientv3.Config
+	EnableTls   bool     `yaml:"enableTls"`
+	Insecure    bool     `yaml:"insecure"`
+	CaFile      string   `yaml:"caFile"`
+	ClientAuth  bool     `yaml:"clientAuth"`
+	CertFile    string   `yaml:"certFile"`
+	KeyFile     string   `yaml:"keyFile"`
+	Report      int      `yaml:"report"`
+	Timeout     int      `yaml:"timeout"`
+	Cluster     []string `yaml:"cluster"`
+	ReportFile  string   `yaml:"reportFile"`
+	LocalReport int      `yaml:"localReport"`
 }
 
 func (e *EtcdConf) Init() error {
@@ -44,6 +48,14 @@ func (e *EtcdConf) Init() error {
 	// init timeout
 	if e.Timeout == 0 {
 		e.Timeout = defaultTimeoutSecond
+	}
+
+	if e.LocalReport == 0 {
+		e.LocalReport = defaultLocalReportSecond
+	}
+
+	if e.ReportFile == "" {
+		e.ReportFile = defaultReportFile
 	}
 
 	// init etcd v3 client
