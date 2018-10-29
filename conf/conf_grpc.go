@@ -1,41 +1,55 @@
 package conf
 
-import "fmt"
+import (
+	"github.com/Waitfantasy/unicorn/util"
+)
 
 type GRpcConf struct {
 	Addr       string `yaml:"addr"`
 	EnableTLS  bool   `yaml:"enableTls"`
-	Insecure   bool   `yaml:"insecure"`
 	CertFile   string `yaml:"certFile"`
 	KeyFile    string `yaml:"keyFile"`
 	ServerName string `yaml:"serverName"`
 }
 
 func (c *GRpcConf) Init() error {
-
 	if c.Addr == "" {
-		c.Addr = ":9001"
+		if v, err := util.GetEnv("UNICORN_GRPC_ADDR", "string"); err != nil {
+			c.Addr = "0.0.0.0:9001"
+		} else {
+			c.Addr = v.(string)
+		}
 	}
 
-	if err := c.validateEnableTLS(); err != nil {
-		return err
+	if c.EnableTLS == false {
+		if v, err := util.GetEnv("UNICORN_GRPC_TLS", "bool"); err == nil {
+			c.EnableTLS = v.(bool)
+		}
 	}
 
-	return nil
-}
-
-func (c *GRpcConf) validateEnableTLS() error {
 	if c.EnableTLS {
 		if c.CertFile == "" {
-			return fmt.Errorf("TLS is enabled, please configure certFile\n")
+			if v, err := util.GetEnv("UNICORN_GRPC_CERT_FILE_PATH", "string"); err != nil {
+				return err
+			} else {
+				c.CertFile = v.(string)
+			}
 		}
 
 		if c.KeyFile == "" {
-			return fmt.Errorf("TLS is enabled, please configure keyFile\n")
+			if v, err := util.GetEnv("UNICORN_GRPC_KEY_FILE_PATH", "string"); err != nil {
+				return err
+			} else {
+				c.KeyFile = v.(string)
+			}
 		}
 
 		if c.ServerName == "" {
-			return fmt.Errorf("TLS is enabled, please configure serverName\n")
+			if v, err := util.GetEnv("UNICORN_GRPC_SERVER_NAME", "string"); err != nil {
+				return err
+			} else {
+				c.ServerName = v.(string)
+			}
 		}
 	}
 	return nil
