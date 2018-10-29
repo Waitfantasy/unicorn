@@ -15,7 +15,7 @@ type GRpcConf struct {
 func (c *GRpcConf) Init() error {
 	if c.Addr == "" {
 		if v, err := util.GetEnv("UNICORN_GRPC_ADDR", "string"); err != nil {
-			c.Addr = "0.0.0.0:9001"
+			c.Addr = "0.0.0.0:6002"
 		} else {
 			c.Addr = v.(string)
 		}
@@ -52,5 +52,6 @@ func (c *GRpcConf) Init() error {
 			}
 		}
 	}
+
 	return nil
 }
