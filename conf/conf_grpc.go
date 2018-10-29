@@ -12,6 +12,11 @@ type GRpcConf struct {
 }
 
 func (c *GRpcConf) Init() error {
+
+	if c.Addr == "" {
+		c.Addr = ":9001"
+	}
+
 	if err := c.validateEnableTLS(); err != nil {
 		return err
 	}
