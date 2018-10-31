@@ -61,16 +61,11 @@ grpc:
   insecure: false
 
 log:
-  enable: true
-
   # default: error
   level: "info|warning|error|debug"
 
   # console|file|network
   output:  "console|file"
-
-  # default: false
-  split: false
 
   # default: /var/run/log/unicorn
   filePath: "./"
@@ -80,3 +75,6 @@ log:
 
   # default: .log
   fileSuffix: ""
+
+  # default: false
+  split: false

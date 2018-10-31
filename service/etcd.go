@@ -33,7 +33,7 @@ func NewEtcdService(c conf.Confer) (*Etcd, error) {
 
 	e.m = m
 
-	filename := c.GetEtcdConf().ReportFile
+	filename := c.GetEtcdConf().LocalReportFile
 	if _, err = os.Stat(filename); os.IsNotExist(err) {
 		if f, err := os.Create(filename); err != nil {
 			return nil, err
@@ -95,8 +95,8 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 		done  bool = false
 	)
 
-	sec1 := time.Duration(e.c.GetEtcdConf().Report) * time.Second
-	sec2 := time.Duration(e.c.GetEtcdConf().LocalReport) * time.Second
+	sec1 := time.Duration(e.c.GetEtcdConf().ReportSec) * time.Second
+	sec2 := time.Duration(e.c.GetEtcdConf().LocalReportSec) * time.Second
 	// t1 control to report timestamp to etcd periodically
 	t1 := time.NewTimer(sec1)
 	// t2 control to report timestamp to local file periodically
@@ -109,7 +109,7 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 		select {
 		case <-t1.C:
 			if local {
-				filename := e.c.GetEtcdConf().ReportFile
+				filename := e.c.GetEtcdConf().LocalReportFile
 				select {
 				case <-e.rec:
 					l.Debug("reconnect etcd success, start report timestamp to etcd\n")

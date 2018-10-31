@@ -4,6 +4,7 @@ import (
 	"github.com/Waitfantasy/unicorn/util"
 )
 
+
 type HttpConf struct {
 	Addr       string `yaml:"addr"`
 	EnableTLS  bool   `yaml:"enableTls"`
@@ -13,7 +14,7 @@ type HttpConf struct {
 	ClientAuth bool   `yaml:"clientAuth"`
 }
 
-func (c *HttpConf) Init() error{
+func (c *HttpConf) Init() error {
 	if c.Addr == "" {
 		if v, err := util.GetEnv("UNICORN_HTTP_ADDR", "string"); err != nil {
 			c.Addr = "0.0.0.0:6001"
@@ -34,7 +35,7 @@ func (c *HttpConf) Init() error{
 		}
 	}
 
-	if c.EnableTLS || c.ClientAuth{
+	if c.EnableTLS || c.ClientAuth {
 		if c.CertFile == "" {
 			if v, err := util.GetEnv("UNICORN_HTTP_CERT_FILE_PATH", "string"); err != nil {
 				return err
@@ -63,4 +64,3 @@ func (c *HttpConf) Init() error{
 	}
 	return nil
 }
-

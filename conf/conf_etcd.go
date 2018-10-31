@@ -4,9 +4,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
+	"github.com/Waitfantasy/unicorn/util"
 	"go.etcd.io/etcd/clientv3"
 	"io/ioutil"
+	"strings"
 )
 
 const (
@@ -17,91 +18,134 @@ const (
 )
 
 type EtcdConf struct {
-	cfg         *clientv3.Config
-	EnableTls   bool     `yaml:"enableTls"`
-	Insecure    bool     `yaml:"insecure"`
-	CaFile      string   `yaml:"caFile"`
-	ClientAuth  bool     `yaml:"clientAuth"`
-	CertFile    string   `yaml:"certFile"`
-	KeyFile     string   `yaml:"keyFile"`
-	Report      int      `yaml:"report"`
-	Timeout     int      `yaml:"timeout"`
-	Cluster     []string `yaml:"cluster"`
-	ReportFile  string   `yaml:"reportFile"`
-	LocalReport int      `yaml:"localReport"`
+	cfg             *clientv3.Config
+	Cluster         []string `yaml:"cluster"`
+	EnableTls       bool     `yaml:"enableTls"`
+	Insecure        bool     `yaml:"insecure"`
+	ClientAuth      bool     `yaml:"clientAuth"`
+	CaFile          string   `yaml:"caFile"`
+	CertFile        string   `yaml:"certFile"`
+	KeyFile         string   `yaml:"keyFile"`
+	ReportSec       int      `yaml:"report"`
+	Timeout         int      `yaml:"timeout"`
+	LocalReportFile string   `yaml:"reportFile"`
+	LocalReportSec  int      `yaml:"localReport"`
 }
 
-func (e *EtcdConf) Init() error {
-	if err := e.validateEnableTls(); err != nil {
-		return err
+func (c *EtcdConf) Init() error {
+	if c.Cluster == nil {
+		if v, err := util.GetEnv("UNICORN_ETCD_CLUSTER", "string"); err != nil {
+			return err
+		} else {
+			c.Cluster = strings.Split(v.(string), ";")
+		}
 	}
 
-	if err := e.validateClientAuth(); err != nil {
-		return err
+	if c.EnableTls == false {
+		if v, err := util.GetEnv("UNICORN_ETCD_TLS", "bool"); err == nil {
+			c.EnableTls = v.(bool)
+		}
 	}
 
-	// init report
-	if e.Report == 0 {
-		e.Report = defaultReportSecond
+	if c.Insecure == false {
+		if v, err := util.GetEnv("UNICORN_ETCD_INSECURE", "bool"); err == nil {
+			c.Insecure = v.(bool)
+		}
 	}
 
-	// init timeout
-	if e.Timeout == 0 {
-		e.Timeout = defaultTimeoutSecond
+	if c.ClientAuth == false {
+		if v, err := util.GetEnv("UNICORN_ETCD_CLIENT_AUTH", "bool"); err == nil {
+			c.ClientAuth = v.(bool)
+		}
 	}
 
-	if e.LocalReport == 0 {
-		e.LocalReport = defaultLocalReportSecond
+	if c.EnableTls {
+		if !c.Insecure {
+			if c.CaFile == "" {
+				if v, err := util.GetEnv("UNICORN_ETCD_CA_FILE_PATH", "string"); err != nil {
+					return err
+				} else {
+					c.CaFile = v.(string)
+				}
+			}
+		}
 	}
 
-	if e.ReportFile == "" {
-		e.ReportFile = defaultReportFile
+	if c.ClientAuth  {
+		if c.CertFile == "" {
+			if v, err := util.GetEnv("UNICORN_ETCD_CERT_FILE_PATH", "string"); err != nil {
+				return err
+			} else {
+				c.CertFile = v.(string)
+			}
+		}
+
+		if c.KeyFile == "" {
+			if v, err := util.GetEnv("UNICORN_ETCD_KEY_FILE_PATH", "string"); err != nil {
+				return err
+			} else {
+				c.KeyFile = v.(string)
+			}
+		}
+
+		if c.CaFile == "" {
+			if v, err := util.GetEnv("UNICORN_ETCD_CA_FILE_PATH", "string"); err != nil {
+				return err
+			} else {
+				c.CaFile = v.(string)
+			}
+		}
 	}
 
-	// init etcd v3 client
-	e.cfg = &clientv3.Config{
-		Endpoints: e.Cluster,
+	if c.Timeout == 0 {
+		if v, err := util.GetEnv("UNICORN_ETCD_TIMEOUT", "int"); err != nil {
+			c.Timeout = defaultTimeoutSecond
+		} else {
+			c.Timeout = v.(int)
+		}
 	}
 
-	if tlsCfg, err := e.createTlsConfig(); err != nil {
+	if c.ReportSec == 0 {
+		if v, err := util.GetEnv("UNICORN_ETCD_REPORT", "int"); err != nil {
+			c.ReportSec = defaultReportSecond
+		} else {
+			c.ReportSec = v.(int)
+		}
+	}
+
+	if c.LocalReportSec == 0 {
+		if v, err := util.GetEnv("UNICORN_ETCD_LOCAL_REPORT", "int"); err != nil {
+			c.LocalReportSec = defaultLocalReportSecond
+		} else {
+			c.LocalReportSec = v.(int)
+		}
+	}
+
+	if c.LocalReportFile == "" {
+		if v, err := util.GetEnv("UNICORN_ETCD_LOCAL_REPORT_FILE", "int"); err != nil {
+			c.LocalReportFile = defaultReportFile
+		} else {
+			c.LocalReportFile = v.(string)
+		}
+
+	}
+
+	// create etcd v3 client
+	c.cfg = &clientv3.Config{
+		Endpoints: c.Cluster,
+	}
+
+	if tlsCfg, err := c.createTlsConfig(); err != nil {
 		return err
 	} else if tlsCfg != nil {
-		e.cfg.TLS = tlsCfg
+		c.cfg.TLS = tlsCfg
 	}
 
 	return nil
 }
 
-func (e *EtcdConf) validateEnableTls() error {
-	if e.EnableTls && !e.Insecure {
-		if e.CaFile == "" {
-			return fmt.Errorf("etcd client TLS is enabled, please configure ca file\n")
-		}
-	}
-
-	return nil
-}
-
-func (e *EtcdConf) validateClientAuth() error {
-	if e.ClientAuth {
-		if e.CaFile == "" {
-			return fmt.Errorf("etcd client enable client auth, please configure ca file\n")
-		}
-
-		if e.CertFile == "" {
-			return fmt.Errorf("etcd client enable client auth, please configure cert file\n")
-		}
-
-		if e.KeyFile == "" {
-			return fmt.Errorf("etcd client enable client auth, please configure key file\n")
-		}
-	}
-
-	return nil
-}
-
-func (e *EtcdConf) createTlsConfig() (*tls.Config, error) {
-	if e.EnableTls && e.Insecure {
+func (c *EtcdConf) createTlsConfig() (*tls.Config, error) {
+	if c.EnableTls && c.Insecure {
 		return &tls.Config{
 			InsecureSkipVerify: true,
 		}, nil
@@ -112,8 +156,8 @@ func (e *EtcdConf) createTlsConfig() (*tls.Config, error) {
 		certPool *x509.CertPool
 	)
 
-	if e.EnableTls {
-		if certPool, err = e.createCertPool(); err != nil {
+	if c.EnableTls {
+		if certPool, err = c.createCertPool(); err != nil {
 			return nil, err
 		}
 
@@ -122,12 +166,12 @@ func (e *EtcdConf) createTlsConfig() (*tls.Config, error) {
 
 	var certificate tls.Certificate
 
-	if e.ClientAuth {
-		if certPool, err = e.createCertPool(); err != nil {
+	if c.ClientAuth {
+		if certPool, err = c.createCertPool(); err != nil {
 			return nil, err
 		}
 
-		if certificate, err = tls.LoadX509KeyPair(e.CertFile, e.KeyFile); err != nil {
+		if certificate, err = tls.LoadX509KeyPair(c.CertFile, c.KeyFile); err != nil {
 			return nil, err
 		}
 
@@ -140,24 +184,24 @@ func (e *EtcdConf) createTlsConfig() (*tls.Config, error) {
 	return nil, nil
 }
 
-func (e *EtcdConf) createCertPool() (*x509.CertPool, error) {
+func (c *EtcdConf) createCertPool() (*x509.CertPool, error) {
 	var (
 		err     error
 		caBytes []byte
 	)
 
-	if caBytes, err = ioutil.ReadFile(e.CaFile); err != nil {
+	if caBytes, err = ioutil.ReadFile(c.CaFile); err != nil {
 		return nil, err
 	}
 
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM(caBytes); ok {
-		return nil, errors.New("the e clinet use ca file cannot certPool.AppendCertsFromPEM")
+		return nil, errors.New("the c clinet use ca file cannot certPool.AppendCertsFromPEM")
 	}
 
 	return certPool, nil
 }
 
-func (e *EtcdConf) GetClientConfig() clientv3.Config {
-	return *e.cfg
+func (c *EtcdConf) GetClientConfig() clientv3.Config {
+	return *c.cfg
 }
