@@ -1,8 +1,7 @@
 etcd:
   # etcd connection cluster
   cluster:
-  - "192.168.10.10:2379"
-  - "192.168.10.11:2379"
+  - "120.55.63.191:2379"
 
   enableTls: false
 

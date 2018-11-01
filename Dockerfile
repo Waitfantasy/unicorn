@@ -8,4 +8,8 @@ COPY bin/unicorn .
 
 ENV GIN_MODE release
 
+EXPOSE 6001
+
+EXPOSE 6002
+
 CMD ["unicorn"]
