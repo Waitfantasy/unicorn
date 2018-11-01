@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	defaultReportSecond      = 30
+	defaultReportSecond      = 3
 	defaultTimeoutSecond     = 5
-	defaultLocalReportSecond = 90
+	defaultLocalReportSecond = 6
 	defaultReportFile        = "/tmp/unicorn-report.bin"
 )
 
@@ -28,7 +28,7 @@ type EtcdConf struct {
 	KeyFile         string   `yaml:"keyFile"`
 	ReportSec       int      `yaml:"report"`
 	Timeout         int      `yaml:"timeout"`
-	LocalReportFile string   `yaml:"reportFile"`
+	LocalReportFile string   `yaml:"localReportFile"`
 	LocalReportSec  int      `yaml:"localReport"`
 }
 
@@ -71,7 +71,7 @@ func (c *EtcdConf) Init() error {
 		}
 	}
 
-	if c.ClientAuth  {
+	if c.ClientAuth {
 		if c.CertFile == "" {
 			if v, err := util.GetEnv("UNICORN_ETCD_CERT_FILE_PATH", "string"); err != nil {
 				return err
@@ -122,7 +122,7 @@ func (c *EtcdConf) Init() error {
 	}
 
 	if c.LocalReportFile == "" {
-		if v, err := util.GetEnv("UNICORN_ETCD_LOCAL_REPORT_FILE", "int"); err != nil {
+		if v, err := util.GetEnv("UNICORN_ETCD_LOCAL_REPORT_FILE", "string"); err != nil {
 			c.LocalReportFile = defaultReportFile
 		} else {
 			c.LocalReportFile = v.(string)

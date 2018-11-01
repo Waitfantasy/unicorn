@@ -24,11 +24,17 @@ type IdConf struct {
 
 func (c *IdConf) Init() error {
 	if c.Epoch == 0 {
-		if v, err := util.GetEnv("UNICORN_EPOCH", "uint4"); err != nil {
+		if v, err := util.GetEnv("UNICORN_EPOCH", "uint64"); err != nil {
 			return err
 		} else {
 			c.Epoch = v.(uint64)
 		}
+	}
+
+	if v, err := util.GetEnv("UNICORN_MACHINE_ID_TYPE", "int"); err != nil {
+		c.MachineIdType = MachineIdEtcdType
+	} else {
+		c.MachineIdType = v.(int)
 	}
 
 	if c.MachineIdType == MachineIdLocalType && c.MachineId == 0 {

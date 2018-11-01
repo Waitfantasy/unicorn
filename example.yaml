@@ -24,7 +24,7 @@ etcd:
   timeout: 5
 
   # local report file. default: /tmp/unicorn-report.gob
-  reportFile: "unicorn-report.bin"
+  localReportFile: "unicorn-report.bin"
 
   # local report second. default: 90
   localReport: 60
@@ -48,13 +48,13 @@ id:
   version: 1
 
 http:
-  addr: ":9001"
+  addr: ":6001"
   enableTls: false
   certFile: ""
   keyFile: ""
 
 grpc:
-  addr: ":9002"
+  addr: ":6002"
   enableTls: false
   certFile: ""
   serverName: ""
@@ -77,4 +77,4 @@ log:
   fileSuffix: ""
 
   # default: false
-  split: false
+  split: true

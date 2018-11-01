@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -15,10 +16,10 @@ const (
 	LInfo        Level = 2
 	LWarn        Level = 3
 	LErr         Level = 4
-	LDebugPrefix       = "Debug: "
-	LInfoPrefix        = "Info: "
-	LWarnPrefix        = "Warning: "
-	LErrPrefix         = "Error: "
+	LDebugPrefix       = "[DEBUG] "
+	LInfoPrefix        = "[INFO] "
+	LWarnPrefix        = "[WARN] "
+	LErrPrefix         = "[ERR] "
 )
 
 const (
@@ -43,7 +44,7 @@ type Log struct {
 }
 
 func (l *Log) InitLogger() (error) {
-	flag := log.LstdFlags | log.Lshortfile
+	flag := log.LstdFlags
 	if l.consoleOut {
 		l.consoleLogger = log.New(os.Stdout, "", flag)
 	}
@@ -105,16 +106,30 @@ func (l *Log) SetFileSplit(split bool) *Log {
 	return l
 }
 
+func (l *Log) GinMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		end := time.Now()
+		latency := end.Sub(start)
+		l.Info("| %3d | %9v | %10s | %s  %s |",
+			c.Writer.Status(),
+			latency,
+			c.ClientIP(),
+			c.Request.Method,
+			c.Request.URL.Path)
+	}
+}
+
 func (l *Log) Split() error {
 	d, err := createDayDuration()
 	if err != nil {
 		return err
 	}
-
-	tick := time.Tick(d)
+	tick := time.NewTicker(d)
 	for {
 		select {
-		case <-tick:
+		case <-tick.C:
 			if w, err := l.createFileWriter(time.Now().Format("2006-01-02")); err != nil {
 				break
 			} else {
@@ -122,7 +137,6 @@ func (l *Log) Split() error {
 				if d, err = createDayDuration(); err != nil {
 					break
 				}
-				tick = time.Tick(d)
 			}
 		}
 	}
@@ -181,7 +195,6 @@ func createDayDuration() (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	// next day
 	t3 := time.Date(t2.Year(), t2.Month(), t2.Day()+1, t2.Hour(), t2.Minute(), t2.Second(), t2.Nanosecond(), time.Local)
 	return time.Duration(t3.Unix()-t2.Unix()) * time.Second, nil
@@ -203,30 +216,18 @@ func (l *Log) Err(format string, v ...interface{}) {
 	l.printf(LErr, format, v...)
 }
 
-func (l *Log) Println(level Level, v ...interface{}) {
-	l.println(level, v...)
-}
-
 func (l *Log) Printf(level Level, format string, v ...interface{}) {
 	l.printf(level, format, v...)
 }
 
-func (l *Log) GinMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		start := time.Now()
-		c.Next()
-		end := time.Now()
-		latency := end.Sub(start)
-		l.Info("| %3d | %9v | %10s | %s  %s |",
-			c.Writer.Status(),
-			latency,
-			c.ClientIP(),
-			c.Request.Method,
-			c.Request.URL.Path)
-	}
-}
-
 func (l *Log) printf(level Level, format string, v ...interface{}) {
+	if _, file, line, ok := runtime.Caller(2); ok {
+		format = "%s:%d: " + format
+		v = append([]interface{}{
+			file, line,
+		}, v...)
+	}
+
 	if prefix := l.getPrefix(level); prefix != "" {
 		if l.consoleLogger != nil {
 			l.consoleLogger.SetPrefix(prefix)
@@ -236,20 +237,6 @@ func (l *Log) printf(level Level, format string, v ...interface{}) {
 		if l.fileLogger != nil {
 			l.fileLogger.SetPrefix(prefix)
 			l.fileLogger.Printf(format, v...)
-		}
-	}
-}
-
-func (l *Log) println(level Level, v ...interface{}) {
-	if prefix := l.getPrefix(level); prefix != "" {
-		if l.consoleLogger != nil {
-			l.consoleLogger.SetPrefix(prefix)
-			l.consoleLogger.Println(v...)
-		}
-
-		if l.fileLogger != nil {
-			l.fileLogger.SetPrefix(prefix)
-			l.fileLogger.Println(v...)
 		}
 	}
 }

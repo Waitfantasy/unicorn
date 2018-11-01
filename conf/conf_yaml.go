@@ -3,11 +3,12 @@ package conf
 import (
 	"errors"
 	"fmt"
+	"github.com/Waitfantasy/unicorn/id"
 	"github.com/Waitfantasy/unicorn/service/machine"
+	"github.com/Waitfantasy/unicorn/util"
+	"github.com/Waitfantasy/unicorn/util/logger"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"github.com/Waitfantasy/unicorn/id"
-	"github.com/Waitfantasy/unicorn/util/logger"
 )
 
 type YamlConf struct {
@@ -19,17 +20,30 @@ type YamlConf struct {
 	generator *id.AtomicGenerator
 }
 
+var defaultYamlConf = &YamlConf{
+	Id:   new(IdConf),
+	Http: new(HttpConf),
+	Etcd: new(EtcdConf),
+	GRpc: new(GRpcConf),
+	Log:  new(LogConf),
+}
+
 func NewYamlConf(filename string) (*YamlConf, error) {
+	if filename == "" {
+		if v, err := util.GetEnv("UNICORN_CONF", "string"); err != nil {
+			return defaultYamlConf, nil
+		} else {
+			filename = v.(string)
+		}
+	}
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-
 	config := &YamlConf{}
 	if err = yaml.Unmarshal(b, config); err != nil {
 		return nil, err
 	}
-
 	return config, nil
 }
 
@@ -150,10 +164,10 @@ func (c *YamlConf) GetLogConf() *LogConf {
 	return c.Log
 }
 
-func (c *YamlConf) GetGenerator() *id.AtomicGenerator{
+func (c *YamlConf) GetGenerator() *id.AtomicGenerator {
 	return c.generator
 }
 
-func (c *YamlConf) GetLogger() *logger.Log  {
+func (c *YamlConf) GetLogger() *logger.Log {
 	return c.Log.log
 }

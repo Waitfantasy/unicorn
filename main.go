@@ -8,21 +8,21 @@ import (
 	"github.com/Waitfantasy/unicorn/net/rpc"
 	"github.com/Waitfantasy/unicorn/service"
 	"log"
-	"runtime"
 )
 
 var (
-	c        conf.Confer
 	filename string
+	c        conf.Confer
 )
 
 func main() {
 	var (
-		err       error
-		ctx       context.Context
+		err         error
+		ctx         context.Context
+		etcdService *service.Etcd
 	)
 
-	flag.StringVar(&filename, "config", "/etc/unicorn/unicorn.yaml", "")
+	flag.StringVar(&filename, "config", "", "The config file path of the project")
 	flag.Parse()
 
 	if c, err = conf.NewYamlConf(filename); err != nil {
@@ -35,36 +35,35 @@ func main() {
 
 	ctx, _ = context.WithCancel(context.Background())
 
-	// verify machine timestamp
-	etcdService, err := service.NewEtcdService(c)
-	if err != nil {
+	if etcdService, err = service.NewEtcdService(c); err != nil {
 		log.Fatal(err)
 	}
 
 	defer etcdService.Close()
-
+	// verify machine timestamp
 	if err = etcdService.VerifyMachineTimestamp(); err != nil {
-		log.Fatalf("etcdService.VerifyMachineTimestamp() error: %v\n", err)
+		log.Fatal(err)
 	}
 
-	// grp server
-	for i := 0; i < runtime.GOMAXPROCS(runtime.NumCPU()); i++ {
+	// start log split
+	if c.GetLogConf().Split {
 		go func() {
-			rpc.NewTaskServer(c).ListenAndServe()
+			c.GetLogger().Split()
 		}()
 	}
 
 	// start report
+	go etcdService.ReportMachineTimestamp(ctx)
+
+	// grp server
 	go func() {
-		if etcdService.ReportMachineTimestamp(ctx); err != nil {
-			log.Fatalf("etcdService.ReportMachineTimestamp() error: %v\n", err)
+		if err = rpc.NewTaskServer(c).ListenAndServe(); err != nil {
+			log.Fatalf("rpc.ListenAndServe() error: %v\n", err)
 		}
 	}()
 
 	// restful server
-	restfulServer := restful.NewServer(c)
-
-	if err = restfulServer.ListenAndServe(); err != nil {
-		log.Fatalf("restfulServer.ListenAndServe() error: %v\n", err)
+	if err = restful.NewServer(c).ListenAndServe(); err != nil {
+		log.Fatalf("restful.ListenAndServe() error: %v\n", err)
 	}
 }

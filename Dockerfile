@@ -6,4 +6,6 @@ WORKDIR /go/bin
 
 COPY bin/unicorn .
 
+ENV GIN_MODE release
+
 CMD ["unicorn"]

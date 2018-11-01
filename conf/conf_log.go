@@ -36,7 +36,7 @@ func (c *LogConf) Init() error {
 
 	if c.FilePath == "" {
 		if v, err := util.GetEnv("UNICORN_LOG_FILE_PATH", "string"); err != nil {
-			c.FilePath = "/var/run/log/unicorn"
+			c.FilePath = "/var/log/unicorn"
 		} else {
 			c.FilePath = v.(string)
 		}
@@ -52,7 +52,7 @@ func (c *LogConf) Init() error {
 
 	if c.FileSuffix == "" {
 		if v, err := util.GetEnv("UNICORN_LOG_FILE_SUFFIX", "string"); err != nil {
-			c.FileSuffix = ".log"
+			c.FileSuffix = "log"
 		} else {
 			c.FileSuffix = v.(string)
 		}

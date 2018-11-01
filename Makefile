@@ -11,11 +11,10 @@ all:
 	$(GOCMD) $(CC) -o $(PROG) $(CFLAGS)
 
 alpine:
-		if [ ! -d "./bin/" ]; then \
-    	mkdir bin; \
+	if [ ! -d "./bin/" ]; then \
+    		mkdir bin; \
     	fi
-    	$(GOCMD) $(CC) -o $(PROG) -a $(CFLAGS)
-
+	$(GOCMD) $(CC) -o $(PROG) -a $(CFLAGS)
 install:
 	cp bin/unicorn $GOPATH/bin
 

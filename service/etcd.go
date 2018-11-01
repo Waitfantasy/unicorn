@@ -2,28 +2,29 @@ package service
 
 import (
 	"context"
-	"encoding/binary"
-	"errors"
+	"fmt"
 	"github.com/Waitfantasy/unicorn/conf"
 	"github.com/Waitfantasy/unicorn/service/machine"
+	"io/ioutil"
 	"math"
 	"os"
+	"strconv"
 	"time"
 )
 
 const maxEndureMs = 5
 
 type Etcd struct {
-	c   conf.Confer
-	m   *machine.EtcdMachine
-	f   *os.File
-	rec chan bool
+	c             conf.Confer
+	m             *machine.EtcdMachine
+	f             *os.File
+	reconnectChan chan bool
 }
 
 func NewEtcdService(c conf.Confer) (*Etcd, error) {
 	e := &Etcd{
-		c:   c,
-		rec: make(chan bool),
+		c:             c,
+		reconnectChan: make(chan bool),
 	}
 
 	m, err := machine.NewEtcdMachine(c.GetEtcdConf().GetClientConfig(), c.GetEtcdConf().Timeout)
@@ -81,62 +82,46 @@ func waitDoubleMachineTimestamp(lastTimestamp uint64) error {
 		if offset := lastTimestamp - now; offset < maxEndureMs {
 			time.Sleep(time.Millisecond * time.Duration(offset<<1))
 		} else {
-			return errors.New("the current clock has an error")
+			return fmt.Errorf("the he last synchronized timestamp(%d) is greater than the current timestamp(%d)\n", lastTimestamp, now)
 		}
 	}
 	return nil
 }
 
-func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
+func (e *Etcd) ReportMachineTimestamp(ctx context.Context) {
 	var (
 		err   error
-		local bool = false
-		etcd  bool = true
-		done  bool = false
+		local bool
+		done  bool
+		etcd  = true
 	)
 
 	sec1 := time.Duration(e.c.GetEtcdConf().ReportSec) * time.Second
 	sec2 := time.Duration(e.c.GetEtcdConf().LocalReportSec) * time.Second
 	// t1 control to report timestamp to etcd periodically
-	t1 := time.NewTimer(sec1)
+	t1 := time.NewTicker(sec1)
 	// t2 control to report timestamp to local file periodically
 	// when an error occurs in the timestamp reported to etcd,
 	// a retry is performed. When the retry exceeds the maximum number (default is 5 times),
 	// the timestamp is reported to the local file.
-	t2 := time.NewTimer(sec2)
+	t2 := time.NewTicker(sec2)
 	l := e.c.GetLogger()
 	for {
 		select {
 		case <-t1.C:
 			if local {
-				filename := e.c.GetEtcdConf().LocalReportFile
 				select {
-				case <-e.rec:
+				// when receiving the reconnect success message sent by reconnect goroutine,
+				// submit the timestamp to etcd
+				case <-e.reconnectChan:
 					l.Debug("reconnect etcd success, start report timestamp to etcd\n")
-					// when receiving the reconnect success message sent by reconnect goroutine,
-					// submit the timestamp of the local file to etcd
-					if ts, err := e.readReportFile(); err != nil {
-						l.Err("read %s error: %v\n", filename, err)
-						etcd = true
-						local = false
-						t1.Reset(sec1)
+					if err = e.retryReport(machine.Timestamp()); err != nil {
+						go e.reconnect()
 						break
 					} else {
-						// when report to etcd error, start reconnect goroutine
-						l.Debug("synchronize local file timestamp-%d to etcd\n", ts)
-						if err = e.retryReport(ts); err != nil {
-							go e.reconnect()
-							t1.Reset(sec1)
-							t2.Reset(sec2)
-							l.Err("synchronizing local files to etcd error: %v\n", err)
-							break
-						} else {
-							l.Debug("synchronize local files to etcd success\n")
-							etcd = true
-							local = false
-							t1.Reset(sec1)
-							break
-						}
+						etcd = true
+						local = false
+						break
 					}
 
 				case <-t2.C:
@@ -145,21 +130,16 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 						l.Err("report timestamp-%d to local file error: %v", ts, err)
 					}
 					l.Debug("report timestamp-%d to local file success\n", ts)
-					t2.Reset(sec2)
-					t1.Reset(sec1)
 					break
 				}
 			}
 
-			// put to etcd
 			if etcd {
 				if err = e.retryReport(machine.Timestamp()); err != nil {
 					local = true
 					etcd = false
 					go e.reconnect()
-					t2.Reset(sec2)
 				}
-				t1.Reset(sec1)
 				break
 			}
 
@@ -174,25 +154,27 @@ func (e *Etcd) ReportMachineTimestamp(ctx context.Context) error {
 			break
 		}
 	}
-
-	return nil
 }
 
 func (e *Etcd) readReportFile() (uint64, error) {
 	var ts uint64
-	if err := binary.Read(e.f, binary.BigEndian, &ts); err != nil {
-		return ts, err
-	}
+	if b, err := ioutil.ReadAll(e.f); err != nil {
+		return 0, err
+	} else {
+		if ts, err = strconv.ParseUint(string(b), 10, 64); err != nil {
+			return 0, err
+		}
 
-	if _, err := e.f.Seek(0, 0); err != nil {
-		return ts, err
-	}
+		if _, err = e.f.Seek(0, 0); err != nil {
+			return 0, err
+		}
 
-	return ts, nil
+		return ts, nil
+	}
 }
 
 func (e *Etcd) writeReportFile(timestamp uint64) error {
-	if err := binary.Write(e.f, binary.BigEndian, timestamp); err != nil {
+	if _, err := e.f.WriteString(strconv.FormatUint(timestamp, 10)); err != nil {
 		return err
 	}
 
@@ -208,18 +190,22 @@ func (e *Etcd) retryReport(timestamp uint64) error {
 		err           error
 		retry         bool
 		retries       int
-		maxRetry      = 5
-		maxWaitSecond = 10
+		maxRetry      = 10
+		maxWaitSecond = 16
 	)
 	l := e.c.GetLogger()
 	for {
+		if retry {
+			timestamp = machine.Timestamp()
+		}
+
 		if err = e.report(timestamp); err != nil {
 			retry = true
 			retries++
-			sec := time.Duration(math.Min(math.Pow(2, float64(retries)), float64(maxWaitSecond)))
+			d := time.Duration(math.Min(math.Pow(2, float64(retries)), float64(maxWaitSecond)))
 			l.Err("report timestamp-%d to etcd error: %v. retry count: %d, wait second: %d\n",
-				timestamp, err, retries, sec)
-			time.Sleep(sec)
+				timestamp, err, retries, d)
+			time.Sleep(d * time.Second)
 		} else {
 			break
 		}
@@ -253,26 +239,24 @@ func (e *Etcd) report(timestamp uint64) error {
 
 func (e *Etcd) reconnect() {
 	l := e.c.GetLogger()
-	l.Debug("start reconnect etcd goroutine\n")
-	done := false
-	sec := time.Minute
-	t := time.NewTimer(sec)
+	l.Info("start reconnect etcd goroutine\n")
+	var done bool
+	t := time.NewTicker(time.Minute)
 	for {
 		select {
 		case <-t.C:
-			l.Debug("[reconnect goroutine]: reconnect etcd\n")
-			if err := e.report(machine.Timestamp()); err == nil {
-				done = true
+			if err := e.report(machine.Timestamp()); err != nil {
 				break
 			} else {
-				t.Reset(sec)
+				done = true
 				break
 			}
 		}
+
 		if done {
-			e.rec <- true
+			e.reconnectChan <- true
 			t.Stop()
-			l.Debug("[reconnect goroutine]: reconnect etcd success\n")
+			l.Info("[reconnect goroutine]: reconnect etcd success\n")
 			break
 		}
 	}
