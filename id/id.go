@@ -1,5 +1,9 @@
 package id
 
+import (
+	"fmt"
+)
+
 type ExtractData struct {
 	MachineId int
 	Sequence  uint64
@@ -9,26 +13,33 @@ type ExtractData struct {
 	Version   int
 }
 
+type Config struct {
+	Epoch     uint64
+	MachineId int
+	IdType    int
+	Reserved  int
+	Version   int
+}
+
 type Id struct {
-	machineId int
-	idType    int
-	reserved  int
-	version   int
+	cfg       *Config
 	meta      *meta
 	timerUtil *TimerUtil
 }
 
-func NewId(machineId, idType, version int, epoch uint64) *Id {
+func NewId(cfg *Config) (*Id, error) {
 	id := &Id{
-		machineId: machineId,
-		idType:    idType,
-		version:   version,
+		cfg: cfg,
 		timerUtil: &TimerUtil{
-			idType, epoch,
+			cfg.IdType, cfg.Epoch,
 		},
 	}
 
-	switch idType {
+	if err := checkConfig(cfg); err != nil {
+		return nil, err
+	}
+
+	switch id.cfg.IdType {
 	case SecondIdType:
 		id.meta = secondMeta
 	case MilliSecondIdType:
@@ -36,17 +47,36 @@ func NewId(machineId, idType, version int, epoch uint64) *Id {
 	default:
 		id.meta = secondMeta
 	}
-	return id
+	return id, nil
+}
+
+func checkConfig(cfg *Config) error {
+	if cfg.Epoch == 0 {
+		return fmt.Errorf("epoch cannot be empty, the id type supports: : \n\t%d: max peak type\n\t%d: min granularity type\n",
+			SecondIdType, MilliSecondIdType)
+	}
+
+	if cfg.MachineId < 1 || cfg.MachineId > 1024 {
+		return fmt.Errorf("machine id is not in range, machine id range: %d ~ %d\n",
+			1, 1024)
+	}
+
+	if cfg.Version != UnavailableVersion && cfg.Version != NormalVersion {
+		return fmt.Errorf("version is unsupported value, the version supports: : \n\t%d: unavailable version\n\t%d: normal version\n",
+			UnavailableVersion, NormalVersion)
+	}
+
+	return nil
 }
 
 func (id *Id) calculate(sequence, lastTimestamp uint64) uint64 {
 	var uuid uint64
-	uuid |= uint64(id.machineId)
+	uuid |= uint64(id.cfg.MachineId)
 	uuid |= uint64(sequence << id.meta.GetSeqShift())
 	uuid |= uint64(lastTimestamp << id.meta.GetTimestampShift())
-	uuid |= uint64(id.reserved << id.meta.GetReservedShift())
-	uuid |= uint64(id.idType << id.meta.GetIdTypeShift())
-	uuid |= uint64(id.version << id.meta.GetVersionShift())
+	uuid |= uint64(id.cfg.Reserved << id.meta.GetReservedShift())
+	uuid |= uint64(id.cfg.IdType << id.meta.GetIdTypeShift())
+	uuid |= uint64(id.cfg.Version << id.meta.GetVersionShift())
 	return uuid
 }
 

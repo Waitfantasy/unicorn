@@ -13,11 +13,3 @@ type Machiner interface {
 	Del(ip string) (*Item, error)
 	Reset(oldIp, newIp string) error
 }
-
-func ValidMachineId(id int) bool {
-	if id > MaxMachine || id < MinMachine {
-		return false
-	}
-
-	return true
-}

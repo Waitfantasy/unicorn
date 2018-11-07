@@ -1,173 +1,132 @@
 package conf
 
 import (
-	"errors"
 	"fmt"
-	"github.com/Waitfantasy/unicorn/id"
 	"github.com/Waitfantasy/unicorn/service/machine"
-	"github.com/Waitfantasy/unicorn/util"
-	"github.com/Waitfantasy/unicorn/util/logger"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
 
 type YamlConf struct {
-	Id        *IdConf   `yaml:"id"`
-	Http      *HttpConf `json:"http"`
-	Etcd      *EtcdConf `yaml:"etcd"`
-	GRpc      *GRpcConf `yaml:"grpc"`
-	Log       *LogConf  `yaml:"log"`
-	generator *id.AtomicGenerator
+	Id            *IdConfig   `yaml:"id"`
+	Etcd          *EtcdConfig `yaml:"etcd"`
+	Http          *HttpConfig `json:"http"`
+	GRpc          *RpcConfig  `yaml:"grpc"`
+	Log           *LogConfig  `yaml:"log"`
 }
 
-var defaultYamlConf = &YamlConf{
-	Id:   new(IdConf),
-	Http: new(HttpConf),
-	Etcd: new(EtcdConf),
-	GRpc: new(GRpcConf),
-	Log:  new(LogConf),
-}
-
-func NewYamlConf(filename string) (*YamlConf, error) {
-	if filename == "" {
-		if v, err := util.GetEnv("UNICORN_CONF", "string"); err != nil {
-			return defaultYamlConf, nil
-		} else {
-			filename = v.(string)
-		}
-	}
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
+func ParseConfigData(data []byte) (*YamlConf, error) {
 	config := &YamlConf{}
-	if err = yaml.Unmarshal(b, config); err != nil {
+	if err := yaml.Unmarshal(data, config); err != nil {
 		return nil, err
 	}
 	return config, nil
 }
 
-func (c *YamlConf) Init() error {
-	if err := c.Id.Init(); err != nil {
-		return err
+func ParseConfigFile(filename string) (*YamlConf, error) {
+	if filename == "" {
+		return &YamlConf{
+			Id:   new(IdConfig),
+			Http: new(HttpConfig),
+			Etcd: new(EtcdConfig),
+			GRpc: new(RpcConfig),
+			Log:  new(LogConfig),
+		}, nil
 	}
-
-	if err := c.Log.Init(); err != nil {
-		return err
-	}
-
-	if err := c.Etcd.Init(); err != nil {
-		return err
-	}
-
-	if err := c.Http.Init(); err != nil {
-		return err
-	}
-
-	if err := c.GRpc.Init(); err != nil {
-		return err
-	}
-
-	if err := c.initMachineId(); err != nil {
-		return err
-	}
-
-	c.initGenerator()
-
-	return nil
-}
-
-func (c *YamlConf) initMachineId() error {
-	var (
-		id  int
-		err error
-	)
-	switch c.Id.MachineIdType {
-	case MachineIdLocalType:
-		id, err = c.fromLocalGetMachineId()
-	case MachineIdEtcdType:
-		item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp)
-		if err != nil {
-			return fmt.Errorf("c.fromEtcdGetMachineItem(%s) error: %v\n", c.Id.MachineIp, err)
-		}
-		id = item.Id
-	default:
-		item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp)
-		if err != nil {
-			return fmt.Errorf("c.fromEtcdGetMachineItem(%s) error: %v\n", c.Id.MachineIp, err)
-		}
-		id = item.Id
-	}
-
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
+		return nil, err
+	}
+	return ParseConfigData(data)
+}
+
+func (c *YamlConf) fromEnvInitConfig() error {
+	if err := c.Id.fromEnvInitConfig(); err != nil {
 		return err
 	}
 
-	c.Id.MachineId = id
-	return nil
-}
-
-func (c *YamlConf) initGenerator() {
-	c.generator = id.NewAtomicGenerator(id.NewId(c.Id.MachineId, c.Id.IdType, c.Id.Version, c.Id.Epoch))
-}
-
-func (c *YamlConf) fromLocalGetMachineId() (int, error) {
-	if !machine.ValidMachineId(c.Id.MachineId) {
-		return 0, errors.New("machine id range from 1 ~ 1024")
+	if err := c.Etcd.fromEnvInitConfig(); err != nil {
+		return err
 	}
-	return c.Id.MachineId, nil
+
+	if err := c.Http.fromEnvInitConfig(); err != nil {
+		return err
+	}
+
+	if err := c.GRpc.fromEnvInitConfig(); err != nil {
+		return err
+	}
+
+	c.Log.fromEnvInitConfig()
+
+	return nil
 }
 
 func (c *YamlConf) fromEtcdGetMachineItem(ip string) (*machine.Item, error) {
+	var err error
+	var m *machine.EtcdMachine
+	var item *machine.Item
+
 	// create machineService
-	machineService, err := machine.NewEtcdMachine(c.Etcd.GetClientConfig(), c.Etcd.Timeout)
-	if err != nil {
+	if m, err = machine.NewEtcdMachine(*c.Etcd.GetClientV3Config(), c.Etcd.Timeout); err != nil {
 		return nil, err
 	}
 
-	defer machineService.Close()
-	item, err := machineService.Get(ip)
-	if err != nil {
-		return nil, err
-	}
+	defer m.Close()
 
-	if item != nil {
+	if item, err = m.Get(ip); err != nil {
+		return nil, err
+	} else if item != nil {
 		return item, nil
 	}
 
-	// create new machine id
-	item, err = machineService.Put(ip)
-	if err != nil {
+	// 向etcd 注册一个新的机器节点
+	if item, err = m.Put(ip); err != nil {
 		return nil, err
 	}
 
 	return item, nil
 }
 
-func (c *YamlConf) GetIdConf() *IdConf {
+func (c *YamlConf) Init() error {
+	// 尝试从env中过去配置
+	if err := c.fromEnvInitConfig(); err != nil {
+		return err
+	}
+
+	// 初始化etcd v3 client 配置
+	if err := c.Etcd.initClientV3Config(); err != nil {
+		return err
+	}
+
+	// 初始化机器id
+	if c.Id.MachineIdType == MachineIdEtcdType {
+		if item, err := c.fromEtcdGetMachineItem(c.Id.MachineIp); err != nil {
+			return fmt.Errorf("using this ip: %s to get machine id from etcd error: %v", c.Id.MachineIp, err)
+		} else {
+			c.Id.MachineId = item.Id
+		}
+	}
+
+	return nil
+}
+
+func (c *YamlConf) GetIdConfig() *IdConfig {
 	return c.Id
 }
 
-func (c *YamlConf) GetHttpConf() *HttpConf {
+func (c *YamlConf) GetHttpConfig() *HttpConfig {
 	return c.Http
 }
 
-func (c *YamlConf) GetEtcdConf() *EtcdConf {
+func (c *YamlConf) GetEtcdConfig() *EtcdConfig {
 	return c.Etcd
 }
 
-func (c *YamlConf) GetGRpcConf() *GRpcConf {
+func (c *YamlConf) GetGRpcConfig() *RpcConfig {
 	return c.GRpc
 }
 
-func (c *YamlConf) GetLogConf() *LogConf {
+func (c *YamlConf) GetLogConfig() *LogConfig {
 	return c.Log
-}
-
-func (c *YamlConf) GetGenerator() *id.AtomicGenerator {
-	return c.generator
-}
-
-func (c *YamlConf) GetLogger() *logger.Log {
-	return c.Log.log
 }

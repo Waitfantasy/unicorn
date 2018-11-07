@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func GetEnv(name string, typ string) (interface{}, error) {
+func Getenv(name string, typ string) (interface{}, error) {
 	if env := os.Getenv(name); env != "" {
 		switch typ {
 		case "int":
@@ -49,6 +49,6 @@ func GetEnv(name string, typ string) (interface{}, error) {
 			return env, nil
 		}
 	} else {
-		return nil, fmt.Errorf("missing %s parameter", name)
+		return nil, fmt.Errorf("%s is not found in env\n", name)
 	}
 }

@@ -9,7 +9,19 @@ import (
 
 func TestId_Gen(t *testing.T) {
 	wg := sync.WaitGroup{}
-	gen := NewAtomicGenerator(NewId(10, MilliSecondIdType, 1, 1539660973223))
+	id, err := NewId(&Config{
+		Epoch:     1539660973223,
+		MachineId: 1,
+		IdType:    1,
+		Reserved:  0,
+		Version:   0,
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	gen := NewAtomicGenerator(id)
 	m := sync.Map{}
 	for i := 0; i < 100; i++ {
 		wg.Add(1)

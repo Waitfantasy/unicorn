@@ -2,8 +2,6 @@ package conf
 
 import (
 	"errors"
-	"fmt"
-	"github.com/Waitfantasy/unicorn/id"
 	"github.com/Waitfantasy/unicorn/util"
 )
 
@@ -13,7 +11,7 @@ const (
 	MachineIdEtcdType  = 1
 )
 
-type IdConf struct {
+type IdConfig struct {
 	Epoch         uint64 `yaml:"epoch"`
 	MachineId     int    `yaml:"machineId"`
 	MachineIp     string `yaml:"machineIp"`
@@ -22,97 +20,36 @@ type IdConf struct {
 	Version       int    `yaml:"version"`
 }
 
-func (c *IdConf) Init() error {
+func (c *IdConfig) fromEnvInitConfig() error{
 	if c.Epoch == 0 {
-		if v, err := util.GetEnv("UNICORN_EPOCH", "uint64"); err != nil {
-			return err
-		} else {
+		if v, err := util.Getenv("UNICORN_EPOCH", "uint64"); err == nil {
 			c.Epoch = v.(uint64)
+		} else {
+			return errors.New("epoch can not be empty")
 		}
 	}
 
-	if v, err := util.GetEnv("UNICORN_MACHINE_ID_TYPE", "int"); err != nil {
-		c.MachineIdType = MachineIdEtcdType
-	} else {
+	if v, err := util.Getenv("UNICORN_MACHINE_ID_TYPE", "int"); err == nil {
 		c.MachineIdType = v.(int)
+	} else {
+		c.MachineIdType = MachineIdEtcdType
 	}
 
 	if c.MachineIdType == MachineIdLocalType && c.MachineId == 0 {
-		if v, err := util.GetEnv("UNICORN_MACHINE_ID", "int"); err != nil {
-			return err
-		} else {
+		if v, err := util.Getenv("UNICORN_MACHINE_ID", "int"); err == nil {
 			c.MachineId = v.(int)
-		}
-	}
-
-	if c.MachineIp == "" {
-		if v, err := util.GetEnv("UNICORN_MACHINE_IP", "string"); err != nil {
-			return err
 		} else {
-			c.MachineIp = v.(string)
+			return errors.New("you used the local id type in the configuration, please configure it")
 		}
 	}
 
-	if err := c.validateMachineIp(); err != nil {
-		return err
-	}
-
-	if err := c.validateMachineIdType(); err != nil {
-		return err
-	}
-
-	if err := c.validateIdType(); err != nil {
-		return err
-	}
-
-	if err := c.validateVersion(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *IdConf) validateMachineIp() error {
 	if c.MachineIp == "" {
-		return errors.New("please configure machine ip")
+		if v, err := util.Getenv("UNICORN_MACHINE_IP", "string"); err == nil {
+			c.MachineIp = v.(string)
+		} else {
+			return errors.New("machine ip can not be empty")
+		}
 	}
-	// TODO regexp validate
+
 	return nil
 }
-
-func (c *IdConf) validateMachineIdType() error {
-	switch c.MachineIdType {
-	case MachineIdLocalType:
-		return nil
-	case MachineIdEtcdType:
-		return nil
-	default:
-		return fmt.Errorf("the way to get machine id support types: \n\t%d: local type\n\t%d: verify type\n",
-			MachineIdLocalType, MachineIdEtcdType)
-	}
-}
-
-func (c *IdConf) validateIdType() error {
-	switch c.IdType {
-	case id.SecondIdType:
-		return nil
-	case id.MilliSecondIdType:
-		return nil
-	default:
-		return fmt.Errorf("id type supports: : \n\t%d: max peak type\n\t%d: min granularity type\n",
-			id.SecondIdType, id.MilliSecondIdType)
-	}
-}
-
-func (c *IdConf) validateVersion() error {
-	switch c.Version {
-	case id.UnavailableVersion:
-		return nil
-	case id.NormalVersion:
-		return nil
-	default:
-		return fmt.Errorf("version supports: : \n\t%d: unavailable version\n\t%d: normal version\n",
-			id.UnavailableVersion, id.NormalVersion)
-	}
-}
-

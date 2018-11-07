@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+message Void {
+}
+
+message TransferResponse {
+    int64 machineId = 1;
+    uint64 sequence = 2;
+    uint64 timestamp = 3;
+    int64 reserved = 4;
+    int64 idType = 5;
+    int64 version = 6;
+}
+
+message TransferRequest {
+    uint64 uuid = 1;
+}
+
+message MakeResponse {
+    uint64 uuid = 1;
+}
+
+service TaskService {
+    rpc MakeUUID (Void) returns (MakeResponse);
+    rpc Transfer (TransferRequest) returns (TransferResponse);
+}

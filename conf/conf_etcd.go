@@ -17,7 +17,7 @@ const (
 	defaultReportFile        = "/tmp/unicorn-report.bin"
 )
 
-type EtcdConf struct {
+type EtcdConfig struct {
 	cfg             *clientv3.Config
 	Cluster         []string `yaml:"cluster"`
 	EnableTls       bool     `yaml:"enableTls"`
@@ -32,29 +32,31 @@ type EtcdConf struct {
 	LocalReportSec  int      `yaml:"localReport"`
 }
 
-func (c *EtcdConf) Init() error {
+func (c *EtcdConfig) fromEnvInitConfig() error {
 	if c.Cluster == nil {
-		if v, err := util.GetEnv("UNICORN_ETCD_CLUSTER", "string"); err != nil {
-			return err
-		} else {
+		if v, err := util.Getenv("UNICORN_ETCD_CLUSTER", "string"); err == nil {
 			c.Cluster = strings.Split(v.(string), ";")
+		} else {
+			return errors.New("etcd cluster can not be empty")
 		}
 	}
 
 	if c.EnableTls == false {
-		if v, err := util.GetEnv("UNICORN_ETCD_TLS", "bool"); err == nil {
+		if v, err := util.Getenv("UNICORN_ETCD_TLS", "bool"); err == nil {
 			c.EnableTls = v.(bool)
+		} else {
+
 		}
 	}
 
 	if c.Insecure == false {
-		if v, err := util.GetEnv("UNICORN_ETCD_INSECURE", "bool"); err == nil {
+		if v, err := util.Getenv("UNICORN_ETCD_INSECURE", "bool"); err == nil {
 			c.Insecure = v.(bool)
 		}
 	}
 
 	if c.ClientAuth == false {
-		if v, err := util.GetEnv("UNICORN_ETCD_CLIENT_AUTH", "bool"); err == nil {
+		if v, err := util.Getenv("UNICORN_ETCD_CLIENT_AUTH", "bool"); err == nil {
 			c.ClientAuth = v.(bool)
 		}
 	}
@@ -62,10 +64,10 @@ func (c *EtcdConf) Init() error {
 	if c.EnableTls {
 		if !c.Insecure {
 			if c.CaFile == "" {
-				if v, err := util.GetEnv("UNICORN_ETCD_CA_FILE_PATH", "string"); err != nil {
-					return err
-				} else {
+				if v, err := util.Getenv("UNICORN_ETCD_CA_FILE_PATH", "string"); err == nil {
 					c.CaFile = v.(string)
+				} else {
+					return errors.New("etcd tls is enabled, but ca file is empty")
 				}
 			}
 		}
@@ -73,78 +75,99 @@ func (c *EtcdConf) Init() error {
 
 	if c.ClientAuth {
 		if c.CertFile == "" {
-			if v, err := util.GetEnv("UNICORN_ETCD_CERT_FILE_PATH", "string"); err != nil {
-				return err
-			} else {
+			if v, err := util.Getenv("UNICORN_ETCD_CERT_FILE_PATH", "string"); err == nil {
 				c.CertFile = v.(string)
+			} else {
+				return errors.New("etcd client auth is enabled, but cert file is empty")
+
 			}
 		}
 
 		if c.KeyFile == "" {
-			if v, err := util.GetEnv("UNICORN_ETCD_KEY_FILE_PATH", "string"); err != nil {
-				return err
-			} else {
+			if v, err := util.Getenv("UNICORN_ETCD_KEY_FILE_PATH", "string"); err == nil {
 				c.KeyFile = v.(string)
+			} else {
+				return errors.New("etcd client auth is enabled, but key file is empty")
 			}
 		}
 
 		if c.CaFile == "" {
-			if v, err := util.GetEnv("UNICORN_ETCD_CA_FILE_PATH", "string"); err != nil {
-				return err
-			} else {
+			if v, err := util.Getenv("UNICORN_ETCD_CA_FILE_PATH", "string"); err == nil {
 				c.CaFile = v.(string)
+			} else {
+				return errors.New("etcd client auth is enabled, but ca file is empty")
 			}
 		}
 	}
 
 	if c.Timeout == 0 {
-		if v, err := util.GetEnv("UNICORN_ETCD_TIMEOUT", "int"); err != nil {
-			c.Timeout = defaultTimeoutSecond
-		} else {
+		if v, err := util.Getenv("UNICORN_ETCD_TIMEOUT", "int"); err == nil {
 			c.Timeout = v.(int)
+		} else {
+			c.Timeout = defaultTimeoutSecond
 		}
 	}
 
 	if c.ReportSec == 0 {
-		if v, err := util.GetEnv("UNICORN_ETCD_REPORT", "int"); err != nil {
-			c.ReportSec = defaultReportSecond
-		} else {
+		if v, err := util.Getenv("UNICORN_ETCD_REPORT", "int"); err == nil {
 			c.ReportSec = v.(int)
+		} else {
+			c.ReportSec = defaultReportSecond
 		}
 	}
 
 	if c.LocalReportSec == 0 {
-		if v, err := util.GetEnv("UNICORN_ETCD_LOCAL_REPORT", "int"); err != nil {
-			c.LocalReportSec = defaultLocalReportSecond
-		} else {
+		if v, err := util.Getenv("UNICORN_ETCD_LOCAL_REPORT", "int"); err != nil {
 			c.LocalReportSec = v.(int)
+		} else {
+			c.LocalReportSec = defaultLocalReportSecond
 		}
 	}
 
 	if c.LocalReportFile == "" {
-		if v, err := util.GetEnv("UNICORN_ETCD_LOCAL_REPORT_FILE", "string"); err != nil {
-			c.LocalReportFile = defaultReportFile
-		} else {
+		if v, err := util.Getenv("UNICORN_ETCD_LOCAL_REPORT_FILE", "string"); err != nil {
 			c.LocalReportFile = v.(string)
+		} else {
+			c.LocalReportFile = defaultReportFile
 		}
 
 	}
 
-	// create etcd v3 client
+	return nil
+}
+
+func (c *EtcdConfig) initClientV3Config()  error{
 	c.cfg = &clientv3.Config{
 		Endpoints: c.Cluster,
 	}
-
 	if tlsCfg, err := c.createTlsConfig(); err != nil {
 		return err
-	} else if tlsCfg != nil {
+	} else {
 		c.cfg.TLS = tlsCfg
 	}
 
 	return nil
 }
 
-func (c *EtcdConf) createTlsConfig() (*tls.Config, error) {
+func (c *EtcdConfig) createCertPool() (*x509.CertPool, error) {
+	var (
+		err     error
+		caBytes []byte
+	)
+
+	if caBytes, err = ioutil.ReadFile(c.CaFile); err != nil {
+		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(caBytes); ok {
+		return nil, errors.New("the client use ca file cannot certPool.AppendCertsFromPEM")
+	}
+
+	return certPool, nil
+}
+
+func (c *EtcdConfig) createTlsConfig() (*tls.Config, error) {
 	if c.EnableTls && c.Insecure {
 		return &tls.Config{
 			InsecureSkipVerify: true,
@@ -184,24 +207,6 @@ func (c *EtcdConf) createTlsConfig() (*tls.Config, error) {
 	return nil, nil
 }
 
-func (c *EtcdConf) createCertPool() (*x509.CertPool, error) {
-	var (
-		err     error
-		caBytes []byte
-	)
-
-	if caBytes, err = ioutil.ReadFile(c.CaFile); err != nil {
-		return nil, err
-	}
-
-	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM(caBytes); ok {
-		return nil, errors.New("the c clinet use ca file cannot certPool.AppendCertsFromPEM")
-	}
-
-	return certPool, nil
-}
-
-func (c *EtcdConf) GetClientConfig() clientv3.Config {
-	return *c.cfg
+func (c *EtcdConfig) GetClientV3Config() *clientv3.Config {
+	return c.cfg
 }
