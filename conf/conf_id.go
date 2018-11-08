@@ -31,8 +31,6 @@ func (c *IdConfig) fromEnvInitConfig() error{
 
 	if v, err := util.Getenv("UNICORN_MACHINE_ID_TYPE", "int"); err == nil {
 		c.MachineIdType = v.(int)
-	} else {
-		c.MachineIdType = MachineIdEtcdType
 	}
 
 	if c.MachineIdType == MachineIdLocalType && c.MachineId == 0 {

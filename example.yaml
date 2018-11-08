@@ -29,8 +29,6 @@ etcd:
   # local report second. default: 90
   localReport: 60
 
-
-
 id:
   epoch: 1539660973223
 
