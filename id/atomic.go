@@ -1,7 +1,6 @@
 package id
 
 import (
-	"errors"
 	"sync/atomic"
 	"unsafe"
 )
@@ -27,6 +26,8 @@ func NewAtomicGenerator(id *Id) *AtomicGenerator {
 	return gen
 }
 
+
+
 func (gen *AtomicGenerator) Make() (uint64, error) {
 	var sequence, timestamp uint64
 	for ; ; {
@@ -34,10 +35,6 @@ func (gen *AtomicGenerator) Make() (uint64, error) {
 		oldData := (*data)(oldDataPointer)
 		timestamp = gen.id.timerUtil.Timestamp()
 		sequence = oldData.sequence
-		if timestamp < oldData.lastTimestamp {
-			return 0, errors.New("clock error")
-		}
-
 		if timestamp == oldData.lastTimestamp {
 			if sequence = (sequence + 1) & uint64(gen.id.meta.GetMaxSequence()); sequence == 0 {
 				timestamp = gen.id.timerUtil.WaitNextClock(oldData.lastTimestamp)
@@ -45,6 +42,7 @@ func (gen *AtomicGenerator) Make() (uint64, error) {
 		} else {
 			sequence = 0
 		}
+
 		newData := &data{
 			sequence:      sequence,
 			lastTimestamp: timestamp,

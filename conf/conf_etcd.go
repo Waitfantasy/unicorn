@@ -117,7 +117,7 @@ func (c *EtcdConfig) fromEnvInitConfig() error {
 	}
 
 	if c.LocalReportSec == 0 {
-		if v, err := util.Getenv("UNICORN_ETCD_LOCAL_REPORT", "int"); err != nil {
+		if v, err := util.Getenv("UNICORN_ETCD_LOCAL_REPORT", "int"); err == nil {
 			c.LocalReportSec = v.(int)
 		} else {
 			c.LocalReportSec = defaultLocalReportSecond
@@ -125,7 +125,7 @@ func (c *EtcdConfig) fromEnvInitConfig() error {
 	}
 
 	if c.LocalReportFile == "" {
-		if v, err := util.Getenv("UNICORN_ETCD_LOCAL_REPORT_FILE", "string"); err != nil {
+		if v, err := util.Getenv("UNICORN_ETCD_LOCAL_REPORT_FILE", "string"); err == nil {
 			c.LocalReportFile = v.(string)
 		} else {
 			c.LocalReportFile = defaultReportFile

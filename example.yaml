@@ -48,15 +48,16 @@ id:
 http:
   addr: ":6001"
   enableTls: false
+  caFile: ""
   certFile: ""
   keyFile: ""
+  clientAuth: false
 
 grpc:
   addr: ":6002"
   enableTls: false
   certFile: ""
   serverName: ""
-  insecure: false
 
 log:
   # default: error
