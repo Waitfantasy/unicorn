@@ -17,7 +17,7 @@ alpine:
 	go build -o $(PROG) -a $(CFLAGS) $(SRCS)
 
 install:
-	cp ./cmd/unicorn/unicorn $GOPATH/bin
+	cp ./bin/unicorn $GOPATH/bin
 
 clean:
 	@rm -rf bin
